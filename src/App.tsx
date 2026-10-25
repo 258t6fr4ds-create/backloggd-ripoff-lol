@@ -13,6 +13,8 @@ import {
   safeCover, statusLabel, STATUSES
 } from './types';
 import type { Game, GameInput, GameStatus, Ownership } from './types';
+import { APP_VERSION } from './releaseNotes';
+import PatchNotes from './PatchNotes';
 
 type Page = 'home' | 'library' | 'discover' | 'wishlist' | 'stats';
 type Sort = 'recent' | 'title' | 'rating' | 'hours' | 'year';
@@ -124,6 +126,19 @@ export default function App() {
   const [editing, setEditing] = useState<Game | 'new' | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [showPatchNotes, setShowPatchNotes] = useState(false);
+  const [seenRelease, setSeenRelease] = useState(() => {
+    try { return localStorage.getItem('gamevault:seenRelease') || ''; }
+    catch { return ''; }
+  });
+  const hasUnreadPatchNotes = seenRelease !== APP_VERSION;
+  const openPatchNotes = () => {
+    try { localStorage.setItem('gamevault:seenRelease', APP_VERSION); }
+    catch { /* Private browsing may block storage; patch notes remain accessible. */ }
+    setSeenRelease(APP_VERSION);
+    setShowSettings(false);
+    setShowPatchNotes(true);
+  };
   const [pickIndex, setPickIndex] = useState(0);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const importRef = useRef<HTMLInputElement>(null);
@@ -142,15 +157,15 @@ export default function App() {
   }, []);
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') { setEditing(null); setSelectedId(null); setShowSettings(false); }
+      if (event.key === 'Escape') { setEditing(null); setSelectedId(null); setShowSettings(false); setShowPatchNotes(false); }
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, []);
   useEffect(() => {
-    document.body.style.overflow = editing || selectedId || showSettings ? 'hidden' : '';
+    document.body.style.overflow = editing || selectedId || showSettings || showPatchNotes ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
-  }, [editing, selectedId, showSettings]);
+  }, [editing, selectedId, showSettings, showPatchNotes]);
 
   const selected = games.find(g => g.id === selectedId) ?? null;
   const collection = games.filter(g => g.status !== 'wishlist');
@@ -251,8 +266,9 @@ export default function App() {
         </nav>
         <div className="sidebar-bottom">
           <div className="side-callout"><div className="callout-icon"><ShieldCheck size={18}/></div><strong>Yours to keep.</strong><span>Your library lives on this device. Remember to back it up.</span><button onClick={() => setShowSettings(true)}>Manage data <ArrowRight size={14}/></button></div>
+          <button className="nav-item" onClick={openPatchNotes}><BookOpen size={18}/><span>Patch notes</span>{hasUnreadPatchNotes && <small className="notes-new">NEW</small>}</button>
           <button className="nav-item" onClick={() => setShowSettings(true)}><Settings2 size={18}/> Settings & backups</button>
-          <div className="sidebar-version">GAMEVAULT / 0.1.0</div>
+          <div className="sidebar-version">GAMEVAULT / {APP_VERSION}</div>
         </div>
       </aside>
       <main className="main-panel">
@@ -260,6 +276,9 @@ export default function App() {
           <div className="topbar-left"><button className="mobile-brand" onClick={() => openPage('home')} aria-label="GameVault home"><Gamepad2 size={23}/></button><span className="breadcrumb">MY SPACE</span><span className="crumb-slash">/</span><strong>{NAV.find(n => n.id === page)?.label}</strong></div>
           <div className="topbar-right">
             {!isOnline && <Pill>Offline</Pill>}
+            <button className="updates-button" onClick={openPatchNotes} aria-label={'Patch notes for GameVault ' + APP_VERSION + (hasUnreadPatchNotes ? ' - new updates' : '')}>
+              <BookOpen size={17}/><span>What's new</span>{hasUnreadPatchNotes && <i className="updates-dot" aria-hidden="true"/>}
+            </button>
             <button className="icon-btn settings-shortcut" onClick={() => setShowSettings(true)} aria-label="Settings and backup"><Settings2 size={19}/></button>
             <div className="topbar-add">{action}</div>
           </div>
@@ -334,7 +353,7 @@ export default function App() {
             </>
           )}
         </div>
-        <footer className="site-footer"><span>GAMEVAULT © 2026 · YOUR LIBRARY, YOUR RULES</span><button onClick={() => setShowSettings(true)}>Local data & backups <ArrowDownToLine size={14}/></button></footer>
+        <footer className="site-footer"><span>GAMEVAULT © 2026 · YOUR LIBRARY, YOUR RULES</span><div className="footer-links"><button onClick={openPatchNotes}>v{APP_VERSION} · Patch notes <BookOpen size={14}/></button><button onClick={() => setShowSettings(true)}>Local data & backups <ArrowDownToLine size={14}/></button></div></footer>
       </main>
       <nav className="mobile-nav" aria-label="Mobile navigation">{NAV.map(item => { const Icon = item.icon; return <button key={item.id} className={page === item.id ? 'active' : ''} onClick={() => openPage(item.id)} aria-current={page === item.id ? 'page' : undefined}><Icon size={21}/><span>{item.label === 'Statistics' ? 'Stats' : item.label}</span></button>; })}</nav>
       {selected && <div className="modal-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) setSelectedId(null); }}>
@@ -348,14 +367,16 @@ export default function App() {
         </section>
       </div>}
       {editing && <GameForm key={editing === 'new' ? 'new' : editing.id} initial={editing === 'new' ? null : editing} onClose={() => setEditing(null)} onSave={persist}/>}
+      {showPatchNotes && <PatchNotes onClose={() => setShowPatchNotes(false)}/>}
       {showSettings && <div className="modal-backdrop" onMouseDown={e => { if(e.target === e.currentTarget) setShowSettings(false); }}>
         <section className="modal settings-modal" role="dialog" aria-modal="true" aria-label="Settings and backups"><header className="modal-heading"><div><span className="eyebrow">PREFERENCES</span><h2>Settings & backups</h2></div><button className="icon-btn" onClick={() => setShowSettings(false)} aria-label="Close"><X size={20}/></button></header>
           <div className="settings-content"><div className="settings-callout"><ShieldCheck size={22}/><div><strong>Your data belongs to you.</strong><p>Saved on this browser using IndexedDB. GitHub Pages does not sync devices. Export regularly; browser data can be cleared.</p></div></div>
+            <button className="setting-action" onClick={openPatchNotes}><span className="setting-icon"><BookOpen size={20}/></span><span><strong>What's new in GameVault</strong><small>Patch notes, improvements and fixes · v{APP_VERSION}</small></span><ArrowRight size={18}/></button>
             <button className="setting-action" onClick={exportBackup}><span className="setting-icon"><Download size={20}/></span><span><strong>Export your library</strong><small>Download all game records as a JSON backup</small></span><ArrowRight size={18}/></button>
             <button className="setting-action" onClick={() => importRef.current?.click()}><span className="setting-icon"><Upload size={20}/></span><span><strong>Import a backup</strong><small>Merge game records from another device or browser</small></span><ArrowRight size={18}/></button>
             <input ref={importRef} type="file" accept=".json,application/json" hidden onChange={importBackup}/>
             <div className="settings-fineprint"><strong>About artwork:</strong> Cover URLs reference external images, which might disappear. This JSON backup saves links, not the images themselves. A media-inclusive export is planned.</div>
-          </div><footer className="modal-version">GameVault v0.1.0 · Free, open source, no account required</footer>
+          </div><footer className="modal-version">GameVault v{APP_VERSION} · Free, open source, no account required</footer>
         </section>
       </div>}
     </div>

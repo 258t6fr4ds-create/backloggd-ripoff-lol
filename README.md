@@ -4,6 +4,19 @@ A minimal, mobile-first personal gaming library and backlog tracker.
 
 **Live URL (once Pages is enabled):** https://258t6fr4ds-create.github.io/backloggd-ripoff-lol/
 
+## Versioned patch notes
+
+Every release must have complete notes in **both** the app's **What's New** panel and [CHANGELOG.md](CHANGELOG.md).
+
+**Release checklist (do not skip):**
+1. Update the version in `package.json` using semantic versioning.
+2. Add the new release at the **top** of `src/releaseNotes.ts`, describing only changes actually included.
+3. Add the corresponding dated entry to `CHANGELOG.md`, categorised as Added, Improved, or Fixed.
+4. Test and deploy via GitHub Actions; do not claim a release is live until deployment succeeds.
+5. Preserve existing user data and exported backup compatibility. Do not use fabricated release notes.
+
+The app always displays the current version and a **What's New** history, with an unread marker per browser until the latest entry is viewed. The notes remain available after the user's ChatGPT subscription ends.
+
 ## v0.1 — Foundation
 
 - Home, Library, Discover, Wishlist, and Statistics
