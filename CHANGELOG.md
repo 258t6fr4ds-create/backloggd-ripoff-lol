@@ -2,6 +2,25 @@
 
 All meaningful app updates receive dated, versioned patch notes. These match the in-app **What's New** panel. Entries list changes actually shipped, never planned features.
 
+## [1.3.5] — 2026-10-26
+**Find games as you type.**
+
+### Added
+- Live, debounced catalogue suggestions after two characters. Tap a result for its normal preview and add-to-library/wishlist actions.
+- Arrow-key suggestion navigation, visible match statuses, and a Show all results control.
+- Optional “Include soundtracks, demos and extras” checkbox, initially off.
+
+### Improved
+- RAWG is the default catalogue tab, with Wikipedia still available as a fallback.
+- Search uses RAWG's existing games endpoint, retaining base games, DLC, expansions and editions. Obvious non-game extras are hidden by default with a conservative title-based filter.
+- Exact and prefix game title matches rank above less relevant fuzzy matches.
+- Cached lookups and aborted stale requests reduce duplicate searches and prevent old results replacing newer ones.
+- Mobile-friendly suggestion rows and filter controls.
+
+**Limitations:** RAWG's games search does not expose a reliable type field to identify every add-on versus every unrelated item. Filtering is best-effort, and the optional Include extras toggle lets you recover excluded results. This change works with the existing deployed Cloudflare Worker; no Worker code or RAWG key changes required.
+
+**Data safety:** No changes to local games, IndexedDB schema, Supabase cloud tables, backup formats or private settings.
+
 ## [1.3.2] — 2026-10-25
 **Mobile usability overhaul.**
 

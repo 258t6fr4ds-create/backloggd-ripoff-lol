@@ -17,6 +17,14 @@ Every release must have complete notes in **both** the app's **What's New** pane
 
 The app always displays the current version and a **What's New** history, with an unread marker per browser until the latest entry is viewed. The notes remain available after the user's ChatGPT subscription ends.
 
+## v1.3.5 — Search suggestions and games first
+
+- **Find game** now defaults to **RAWG**, using the existing configured Cloudflare Worker.
+- Typing at least two characters searches after a short pause; matching titles appear immediately under the search field and can be selected directly.
+- Results prefer exact/prefix game matches and hide obvious non-game extras by default without excluding DLC and expansions. Use **Include soundtracks, demos and extras** to override the conservative title filter.
+- Wikipedia remains accessible as an optional fallback.
+- The RAWG Worker code does **not** need to be redeployed; this is an app-side release. Personal game data, cloud sync and JSON backups are unchanged.
+
 ## iPhone layout fixes (v1.3.2)
 
 - Form inputs have readable 16px mobile text to stop iOS auto-zoom.

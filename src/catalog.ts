@@ -80,7 +80,7 @@ export async function searchWikipedia(query: string, signal?: AbortSignal): Prom
 }
 
 type RawgGame = {
-  id?: number; name?: string; released?: string; background_image?: string;
+  id?: number; name?: string; released?: string; background_image?: string; added?: number;
   slug?: string; genres?: { name?: string }[]; platforms?: { platform?: { name?: string } }[];
   short_screenshots?: { image?: string; is_deleted?: boolean }[];
 };
@@ -100,7 +100,34 @@ function mapRawgGame(game: RawgGame): CatalogueGame {
     screenshots: (game.short_screenshots ?? []).filter(i => !i.is_deleted).map(i => i.image).filter((i): i is string => !!i).slice(0, 8),
   };
 }
-export async function searchRawg(query: string, proxy: string, signal?: AbortSignal): Promise<CatalogueGame[]> {
+/**
+ * RAWG's /games catalogue already includes base games and additions (DLC).
+ * Its search response doesn't expose a reliable media-type enum, so only
+ * exclude clearly labelled peripheral material. Keep DLC, expansions, seasons,
+ * episodes, editions and remasters in the default results.
+ * Users can explicitly show everything RAWG returns.
+ */
+function isPeripheralExtra(title: string): boolean {
+  const cleaned = title.trim().replace(/\s*(?:\[[^\]]+\]|\([^)]*\))\s*$/, '').trim();
+  return /(?:^|[\s:–—-])(?:(?:official|original|digital|bonus)\s+)?(?:soundtrack|ost|artbook|art\s+book|wallpapers?|wallpaper\s+pack|desktop\s+theme|screensaver|strategy\s+guide|game\s+guide|manual|press\s+kit|game\s+trailer|trailer|teaser|making\s+of|companion\s+app|demo|playtest|beta\s+test|benchmark)(?:\s+(?:edition|pack|bundle|dlc))?$/i.test(cleaned);
+}
+
+function searchPriority(title: string, query: string): number {
+  const normal = (value: string) => value.toLocaleLowerCase().normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim().replace(/\s+/g, ' ');
+  const needle = normal(query), name = normal(title);
+  if (!needle) return 0;
+  if (name === needle) return 100;
+  if (name.startsWith(needle + ' ')) return 85;
+  if (name.startsWith(needle)) return 78;
+  if (name.includes(' ' + needle + ' ')) return 68;
+  if (name.endsWith(' ' + needle)) return 66;
+  if (name.includes(needle)) return 60;
+  const words = needle.split(' ').filter(Boolean);
+  return words.every(word => name.includes(word)) ? 36 : 0;
+}
+
+export async function searchRawg(query: string, proxy: string, signal?: AbortSignal, includeExtras = false): Promise<CatalogueGame[]> {
   if (!proxy) throw new Error('Connect your RAWG Worker in Settings first.');
   const url = new URL(proxy + '/games');
   url.searchParams.set('search', query.trim().slice(0, 100));
@@ -110,7 +137,12 @@ export async function searchRawg(query: string, proxy: string, signal?: AbortSig
     throw new Error('RAWG search failed (' + response.status + '). Check your Worker URL and credentials.');
   }
   const data = await response.json() as { results?: RawgGame[] };
-  return (data.results ?? []).filter(g => g.id && g.name).map(mapRawgGame);
+  return (data.results ?? [])
+    .filter((game): game is RawgGame => typeof game.id === 'number' && game.id > 0 && typeof game.name === 'string' && game.name.trim().length > 0)
+    .filter(game => includeExtras || !isPeripheralExtra(game.name!))
+    .sort((a, b) => searchPriority(b.name!, query) - searchPriority(a.name!, query)
+      || Math.log1p(b.added ?? 0) - Math.log1p(a.added ?? 0))
+    .map(mapRawgGame);
 }
 export async function fetchRawgScreenshots(gameId: string, proxy: string, signal?: AbortSignal): Promise<string[]> {
   const id = gameId.replace(/^rawg:/, '');

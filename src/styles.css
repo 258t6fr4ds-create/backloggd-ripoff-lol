@@ -562,3 +562,23 @@ h1,h2,h3{font-family:Manrope,'DM Sans',sans-serif}
   .modal-heading h2{font-size:17px}
   .catalogue-body,.cloud-body,.settings-content,.patchnotes-content{padding-top:12px}
 }
+
+
+/* v1.3.5: live RAWG autocomplete, game / DLC focused search */
+.catalogue-typebar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 15px;padding:12px 14px;border:1px solid #35414b;background:#1e262e;border-radius:10px}
+.catalogue-typebar>span{font-size:11px;color:#d1deea;font-weight:700}
+.catalogue-typebar label{display:flex;gap:9px;align-items:center;cursor:pointer;color:#aebac7;font-size:11px;line-height:1.45}
+.catalogue-typebar input{accent-color:#aac2d5;width:17px;height:17px;flex:0 0 auto}
+.catalogue-searchline .catalogue-clear{flex:0 0 30px;min-height:40px;width:30px;display:grid;place-items:center;color:#b7c6d2;background:transparent;border-radius:8px}
+.catalogue-searchline .catalogue-clear:hover{background:#36424c}
+.catalogue-live-status{font-size:11px;color:#a3b2be;min-height:18px;line-height:1.5;margin-top:9px}
+.catalogue-result.keyboard-active,.catalogue-result:focus-visible{background:#354452;border-color:#849fb6}
+.catalogue-showmore{display:flex;align-items:center;justify-content:center;gap:8px;background:#2a3642;border:1px solid #405060;border-radius:9px;color:#e0edf6;padding:13px;margin-top:6px;font-size:12px;font-weight:750;min-height:46px}
+.catalogue-showmore:hover{background:#334353}
+@media(max-width:650px){
+ .catalogue-typebar{gap:10px;padding:12px}
+ .catalogue-typebar label{width:100%;min-height:35px;font-size:12px}
+ .catalogue-live-status{font-size:12px}
+ .catalogue-clear{min-width:34px}
+ .catalogue-showmore{min-height:48px}
+}

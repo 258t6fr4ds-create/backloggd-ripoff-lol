@@ -17,6 +17,22 @@ export interface Release {
  */
 export const RELEASE_NOTES: Release[] = [
   {
+    version: '1.3.5',
+    date: '2026-10-26',
+    title: 'Find games as you type.',
+    summary: 'RAWG-first discovery, debounced live suggestions, improved game/DLC relevance and fewer unrelated extras.',
+    changes: [
+      { type: 'Added', text: 'Live search suggestions after two characters, with a short typing debounce to avoid unnecessary RAWG requests.' },
+      { type: 'Added', text: 'Keyboard up/down navigation, highlighted suggestions, and tap-to-preview game results.' },
+      { type: 'Improved', text: 'RAWG now opens as the default catalogue, with Wikipedia kept as an explicit alternative.' },
+      { type: 'Improved', text: 'Game and DLC results are prioritised; obvious soundtracks, guides, trailers, demos and other extras are hidden by default.' },
+      { type: 'Added', text: 'Include extras switch for seeing all RAWG results when the default filter is too restrictive.' },
+      { type: 'Improved', text: 'Abort old requests, reuse recent query results within search, and show clear loading and no-results states.' },
+      { type: 'Fixed', text: 'Fast typing no longer allows older search results to replace newer suggestions.' },
+    ],
+  },
+
+  {
     version: '1.3.2',
     date: '2026-10-25',
     title: 'Mobile usability overhaul.',
