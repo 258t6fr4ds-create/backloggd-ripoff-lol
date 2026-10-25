@@ -2,6 +2,18 @@
 
 All meaningful app updates receive dated, versioned patch notes. These match the in-app **What's New** panel. Entries list changes actually shipped, never planned features.
 
+## [1.3.1] — 2026-10-25
+**A GameVault icon of its own.**
+
+### Fixed
+- Dedicated 180×180 PNG Apple touch icon added for Safari's **Add to Home Screen** flow, avoiding the previous ambiguous SVG-only fallback.
+
+### Improved
+- Versioned Apple touch icon and refreshed web-app manifest/icon reference so new installs get the correct controller branding.
+- Updated service-worker offline cache version while preserving local library storage, cloud connection settings, and JSON backup compatibility.
+
+**iOS note:** iPhone Home Screen icons are often captured at installation time. If an old shortcut still displays the wrong image, export a backup if you have local games, then remove only the **GameVault** shortcut and add it again from Safari (do not remove Sidequest).
+
 ## [1.3.0] — 2026-10-25
 **Your games, across devices.**
 

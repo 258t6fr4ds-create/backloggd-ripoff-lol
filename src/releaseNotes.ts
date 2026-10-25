@@ -17,6 +17,18 @@ export interface Release {
  */
 export const RELEASE_NOTES: Release[] = [
   {
+    version: '1.3.1',
+    date: '2026-10-25',
+    title: 'A GameVault icon of its own.',
+    summary: 'Fixes the iPhone Home Screen shortcut icon by providing a dedicated Apple touch image and refreshed app metadata.',
+    changes: [
+      { type: 'Fixed', text: 'Added a real 180×180 PNG Apple touch icon so iPhone Home Screen shortcuts display the GameVault controller instead of an incorrect cached icon.' },
+      { type: 'Improved', text: 'Refreshed manifest and icon version references so newly installed shortcuts use the latest GameVault art.' },
+      { type: 'Improved', text: 'Updated the offline cache version while preserving all existing local game records and cloud settings.' },
+    ],
+  },
+
+  {
     version: '1.3.0',
     date: '2026-10-25',
     title: 'Your games, across devices.',

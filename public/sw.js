@@ -1,8 +1,8 @@
-const CACHE = 'gamevault-app-v1';
+const CACHE = 'gamevault-app-v1.3.1';
 const SCOPE = self.registration.scope;
 
 self.addEventListener('install', event => {
-  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll([SCOPE, SCOPE + 'icon.svg'])));
+  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll([SCOPE, SCOPE + 'icon.svg', SCOPE + 'icon-180-v1.3.1.png'])));
   self.skipWaiting();
 });
 
