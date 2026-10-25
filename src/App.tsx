@@ -7,7 +7,9 @@ import {
   RefreshCw, Search, Settings2, ShieldCheck, Shuffle, SlidersHorizontal,
   Sparkles, Star, Trash2, Upload, X
 } from 'lucide-react';
-import { loadGames, mergeGames, removeGame, saveGame } from './db';
+import { loadGames, mergeGames, removeGame, saveGame, recordPending } from './db';
+import { Cloud } from 'lucide-react';
+import CloudPanel from './CloudPanel';
 import {
   emptyGame, normalizeGame, ownershipLabel, OWNERSHIPS,
   safeCover, statusLabel, STATUSES
@@ -134,6 +136,7 @@ export default function App() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showCatalogue, setShowCatalogue] = useState(false);
+  const [showCloud, setShowCloud] = useState(false);
   const [workerAddress, setWorkerAddress] = useState(readRawgProxy);
   const [workerInput, setWorkerInput] = useState(readRawgProxy);
   const [showPatchNotes, setShowPatchNotes] = useState(false);
@@ -167,15 +170,15 @@ export default function App() {
   }, []);
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') { setEditing(null); setSelectedId(null); setShowSettings(false); setShowPatchNotes(false); setShowCatalogue(false); }
+      if (event.key === 'Escape') { setEditing(null); setSelectedId(null); setShowSettings(false); setShowPatchNotes(false); setShowCatalogue(false); setShowCloud(false); }
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, []);
   useEffect(() => {
-    document.body.style.overflow = editing || selectedId || showSettings || showPatchNotes || showCatalogue ? 'hidden' : '';
+    document.body.style.overflow = editing || selectedId || showSettings || showPatchNotes || showCatalogue || showCloud ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
-  }, [editing, selectedId, showSettings, showPatchNotes, showCatalogue]);
+  }, [editing, selectedId, showSettings, showPatchNotes, showCatalogue, showCloud]);
 
   const selected = games.find(g => g.id === selectedId) ?? null;
   const collection = games.filter(g => g.status !== 'wishlist');
@@ -210,6 +213,7 @@ export default function App() {
     const game: Game = { ...input, id: old?.id ?? crypto.randomUUID(), addedAt: old?.addedAt ?? now, updatedAt: now };
     try {
       await saveGame(game);
+      await recordPending(game, game.id);
       setGames(items => [...items.filter(g => g.id !== game.id), game]);
       setNotice(old ? 'Game updated.' : 'Game added to your collection.');
       return true;
@@ -235,6 +239,7 @@ export default function App() {
     };
     try {
       await saveGame(game);
+      await recordPending(game, game.id);
       setGames(old => [...old, game]);
       setNotice('Imported ' + game.title + '. Edit it to set your platform and ownership.');
       return true;
@@ -252,13 +257,13 @@ export default function App() {
   }
   async function patchGame(game: Game, change: Partial<Game>) {
     const next = { ...game, ...change, updatedAt: new Date().toISOString() };
-    try { await saveGame(next); setGames(items => items.map(g => g.id === game.id ? next : g)); setNotice('Game updated.'); }
+    try { await saveGame(next); await recordPending(next, next.id); setGames(items => items.map(g => g.id === game.id ? next : g)); setNotice('Game updated.'); }
     catch(e) { setNotice('Could not save: ' + String(e)); }
   }
   async function deleteGame(game: Game) {
     if (!window.confirm('Permanently remove "' + game.title + '" from this device? Export a backup first if needed.')) return;
     try {
-      await removeGame(game.id); setGames(items => items.filter(g => g.id !== game.id));
+      await removeGame(game.id); await recordPending(null, game.id); setGames(items => items.filter(g => g.id !== game.id));
       setSelectedId(null); setNotice('Game removed.');
     } catch(e) { setNotice('Could not delete: ' + String(e)); }
   }
@@ -290,6 +295,7 @@ export default function App() {
       const question = 'Import ' + normalized.length + ' games? ' + replacements + ' matching IDs will be updated; other existing games stay untouched.';
       if (!window.confirm(question)) return;
       await mergeGames(normalized);
+      for (const game of normalized) await recordPending(game, game.id);
       setGames(await loadGames());
       setNotice('Imported ' + normalized.length + ' records. ' + (originals.length - normalized.length) + ' invalid records skipped.');
       setShowSettings(false);
@@ -312,6 +318,7 @@ export default function App() {
         </nav>
         <div className="sidebar-bottom">
           <div className="side-callout"><div className="callout-icon"><ShieldCheck size={18}/></div><strong>Yours to keep.</strong><span>Your library lives on this device. Remember to back it up.</span><button onClick={() => setShowSettings(true)}>Manage data <ArrowRight size={14}/></button></div>
+          <button className="nav-item" onClick={() => setShowCloud(true)}><Cloud size={18}/><span>Cloud sync</span></button>
           <button className="nav-item" onClick={openPatchNotes}><BookOpen size={18}/><span>Patch notes</span>{hasUnreadPatchNotes && <small className="notes-new">NEW</small>}</button>
           <button className="nav-item" onClick={() => setShowSettings(true)}><Settings2 size={18}/> Settings & backups</button>
           <div className="sidebar-version">GAMEVAULT / {APP_VERSION}</div>
@@ -322,6 +329,7 @@ export default function App() {
           <div className="topbar-left"><button className="mobile-brand" onClick={() => openPage('home')} aria-label="GameVault home"><Gamepad2 size={23}/></button><span className="breadcrumb">MY SPACE</span><span className="crumb-slash">/</span><strong>{NAV.find(n => n.id === page)?.label}</strong></div>
           <div className="topbar-right">
             {!isOnline && <Pill>Offline</Pill>}
+            <button className="cloud-shortcut" onClick={() => setShowCloud(true)} aria-label="Cloud sync"><Cloud size={18}/><span>Cloud sync</span></button>
             <button className="updates-button" onClick={openPatchNotes} aria-label={'Patch notes for GameVault ' + APP_VERSION + (hasUnreadPatchNotes ? ' - new updates' : '')}>
               <BookOpen size={17}/><span>What's new</span>{hasUnreadPatchNotes && <i className="updates-dot" aria-hidden="true"/>}
             </button>
@@ -416,6 +424,7 @@ export default function App() {
         </section>
       </div>}
       {editing && <GameForm key={editing === 'new' ? 'new' : editing.id} initial={editing === 'new' ? null : editing} onClose={() => setEditing(null)} onSave={persist}/>}
+      <CloudPanel visible={showCloud} onClose={() => setShowCloud(false)} onRemote={games=>setGames(games)} onNotify={message=>setNotice(message)}/>
       {showCatalogue && <CatalogueSearch onClose={() => setShowCatalogue(false)} onImport={importCatalogue} onOpenSettings={() => {setShowCatalogue(false);setShowSettings(true);}}/>}
       {showPatchNotes && <PatchNotes onClose={() => setShowPatchNotes(false)}/>}
       {showSettings && <div className="modal-backdrop" onMouseDown={e => { if(e.target === e.currentTarget) setShowSettings(false); }}>
@@ -429,6 +438,7 @@ export default function App() {
               <small>{workerAddress ? 'Worker configured on this device.' : 'No Worker connected. Keyless Wikipedia search is still available.'}</small>
               <a href="https://github.com/258t6fr4ds-create/backloggd-ripoff-lol/blob/main/CATALOG_SETUP.md" target="_blank" rel="noopener noreferrer">Read browser-only setup instructions ↗</a>
             </div>
+            <button className="setting-action" onClick={() => {setShowSettings(false);setShowCloud(true);}}><span className="setting-icon"><Cloud size={20}/></span><span><strong>Cloud sync</strong><small>Sync your game library with another device using Supabase</small></span><ArrowRight size={18}/></button>
             <button className="setting-action" onClick={openPatchNotes}><span className="setting-icon"><BookOpen size={20}/></span><span><strong>What's new in GameVault</strong><small>Patch notes, improvements and fixes · v{APP_VERSION}</small></span><ArrowRight size={18}/></button>
             <button className="setting-action" onClick={exportBackup}><span className="setting-icon"><Download size={20}/></span><span><strong>Export your library</strong><small>Download all game records as a JSON backup</small></span><ArrowRight size={18}/></button>
             <button className="setting-action" onClick={() => importRef.current?.click()}><span className="setting-icon"><Upload size={20}/></span><span><strong>Import a backup</strong><small>Merge game records from another device or browser</small></span><ArrowRight size={18}/></button>

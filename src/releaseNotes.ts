@@ -17,6 +17,21 @@ export interface Release {
  */
 export const RELEASE_NOTES: Release[] = [
   {
+    version: '1.3.0',
+    date: '2026-10-25',
+    title: 'Your games, across devices.',
+    summary: 'Optional Supabase cloud sync with offline changes, device merging, and explicit conflict resolution.',
+    changes: [
+      { type: 'Added', text: 'Sign in through Supabase using the same account/project as Sidequest, with a separate GameVault table.' },
+      { type: 'Added', text: 'Cross-device game sync, local offline edit queue and deletion protection via tombstones.' },
+      { type: 'Added', text: 'Visible sync state, pending-change count, last-check time and manual Sync now control.' },
+      { type: 'Added', text: 'Per-game conflict review so another device cannot silently overwrite a newer record.' },
+      { type: 'Improved', text: 'Cloud checks while the app is open, on network reconnection and when the app becomes visible.' },
+      { type: 'Added', text: 'Additive Supabase SQL setup and browser-only configuration documentation.' },
+    ],
+  },
+
+  {
     version: '1.2.0',
     date: '2026-10-25',
     title: 'Real games. Real artwork.',

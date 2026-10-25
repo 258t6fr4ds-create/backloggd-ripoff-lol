@@ -103,6 +103,7 @@ export async function syncLibrary(
   const pending = await listPending();
   const queue = new Map(pending.map(row => [row.id, row]));
   let uploaded = 0, downloaded = 0;
+  const uploadedIds = new Set<string>();
   const conflicts: SyncConflict[] = [];
 
   // First sync/import: preserve every local record that isn't in the cloud.
@@ -137,13 +138,14 @@ export async function syncLibrary(
     versions[id] = nextRev;
     await clearPending(id, item.queuedAt);
     uploaded++;
+    uploadedIds.add(id);
   }
 
   const conflictedIds = new Set(conflicts.map(c => c.id));
   // Don't apply cloud changes when a local edit is still queued or needs a conflict decision.
   const activeQueue = new Set((await listPending()).map(q => q.id));
   for (const [id, row] of remote) {
-    if (activeQueue.has(id) || conflictedIds.has(id)) continue;
+    if (activeQueue.has(id) || conflictedIds.has(id) || uploadedIds.has(id)) continue;
     const game = validGame(row);
     const localGame = local.find(g => g.id === id);
     if (versions[id] === row.revision && localGame && game && sameData(localGame, game)) continue;

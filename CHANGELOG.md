@@ -2,6 +2,23 @@
 
 All meaningful app updates receive dated, versioned patch notes. These match the in-app **What's New** panel. Entries list changes actually shipped, never planned features.
 
+## [1.3.0] — 2026-10-25
+**Your games, across devices.**
+
+### Added
+- Optional Supabase Auth and per-user GameVault cloud table, separate from Sidequest's records.
+- Automatic sync while the app is open, foreground/reconnect checks and manual Sync now.
+- Persistent offline changes queue and cloud deletion tombstones.
+- Explicit conflict handling for independently modified games.
+- Sync status, pending changes, last-check timestamp and recovery guidance.
+- Browser-only Supabase SQL setup and project connection instructions.
+
+### Improved
+- Existing local games and exported JSON backups remain compatible.
+- Sync operations use cloud revision checks to prevent stale devices overwriting newer records.
+
+**Required setup:** The user must run `supabase/gamevault.sql` in their own existing Supabase project, then supply only its public Project URL and publishable/anon key inside the app. Code deployment alone does not connect devices.
+
 ## [1.2.0] — 2026-10-25
 **Real games. Real artwork.**
 

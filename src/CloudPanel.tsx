@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import type { FormEvent } from 'react';
 import type { SupabaseClient, User } from '@supabase/supabase-js';
 import { ArrowDownUp, CheckCircle, Cloud, CloudOff, LoaderCircle, LogIn, LogOut, RefreshCcw, ShieldCheck, X } from 'lucide-react';
 import { listPending } from './db';
@@ -6,8 +7,8 @@ import { checkAccountIdentity, makeCloudClient, readCloudConfig, saveCloudConfig
 import type { Game } from './types';
 
 export default function CloudPanel({
-  onClose, onRemote, onNotify
-}: { onClose: () => void; onRemote: (games: Game[]) => void; onNotify: (message: string) => void }) {
+  visible, onClose, onRemote, onNotify
+}: { visible: boolean; onClose: () => void; onRemote: (games: Game[]) => void; onNotify: (message: string) => void }) {
   const [config, setConfig] = useState<CloudConfig | null>(readCloudConfig);
   const [project, setProject] = useState(config?.url || '');
   const [key, setKey] = useState(config?.key || '');
@@ -80,7 +81,7 @@ export default function CloudPanel({
       setError('');setUser(null);setStatus('signed-out');
     } catch(err) {setError(err instanceof Error?err.message:String(err));}
   }
-  async function signIn(e:React.FormEvent) {
+  async function signIn(e:FormEvent) {
     e.preventDefault();
     if(!client||!config||workingRef.current)return;
     workingRef.current=true;setError('');
@@ -115,6 +116,7 @@ export default function CloudPanel({
     }catch(err){setError(err instanceof Error?err.message:String(err));}
     finally{busy.current=false;}
   }
+  if (!visible) return null;
   return <div className="modal-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)onClose();}}>
     <section className="modal cloud-modal" role="dialog" aria-modal="true" aria-label="Cloud sync">
       <header className="modal-heading"><div><span className="eyebrow">CROSS-DEVICE STORAGE</span><h2>Cloud sync</h2></div><button className="icon-btn" aria-label="Close cloud sync" onClick={onClose}><X size={20}/></button></header>

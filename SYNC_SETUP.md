@@ -18,8 +18,8 @@
 ## How sync behaves
 
 - GameVault stores games in IndexedDB locally. Saves and deletions are queued with a revision number.
-- On opening the Cloud sync panel, it pulls remote rows, uploads queued edits, and merges non-conflicting remote edits. It checks every 30 seconds **while the panel is open**, and when it regains focus or internet.
-- **Important:** This release's automatic checking runs inside the **Cloud sync panel**. Leaving or closing the panel stops periodic checking. Use **Sync now** after opening it on each device. Always verify last sync.
+- The cloud engine stays mounted as part of the app after configuration. It pulls remote rows, uploads queued edits, and merges non-conflicting cloud edits every 30 seconds **while the app is open**, and when it regains focus or internet. Use **Sync now** to force a check and review its result.
+- **Important:** Background sync after closing the app is not guaranteed. The service cannot fix a Sidequest-specific login or configuration issue; those require a separate check.
 - If two devices change the same record independently, a conflict asks **Keep this device** or **Use cloud**. Neither record is silently overwritten.
 - Cloud deletions are stored as tombstones so the game isn't resurrected by a stale offline device.
 - An older local GameVault collection merges into your account by game ID. Different records with the same ID are treated as conflicts. A unique local record is added.

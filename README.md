@@ -17,6 +17,14 @@ Every release must have complete notes in **both** the app's **What's New** pane
 
 The app always displays the current version and a **What's New** history, with an unread marker per browser until the latest entry is viewed. The notes remain available after the user's ChatGPT subscription ends.
 
+## v1.3 — Optional Supabase cloud sync
+
+- Uses the **same Supabase project and app login as Sidequest**, but its own `gamevault_games` table.
+- Keeps local saves and an offline edit/delete queue, with revision-checked writes and per-game conflict decisions.
+- Checks while the app is open, on foreground/reconnection, and via **Sync now**.
+- Requires you to execute [supabase/gamevault.sql](supabase/gamevault.sql) in your project, and connect with its **public** URL/key. No credentials are included in the GitHub source.
+- Follow [SYNC_SETUP.md](SYNC_SETUP.md). Use backups before connecting other devices.
+
 ## v1.2 — Catalogue and media
 
 - **Find game** uses public Wikipedia search without an API key; verify correct game articles. Results may include genuine artwork if supplied by Wikipedia.
