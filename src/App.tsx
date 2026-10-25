@@ -101,7 +101,7 @@ function GameForm({ initial, onClose, onSave }: {
         <header className="modal-heading"><div><span className="eyebrow">GAME RECORD</span><h2>{initial ? 'Edit game' : 'Add a game'}</h2></div><button className="icon-btn" onClick={onClose} aria-label="Close"><X size={20}/></button></header>
         <form onSubmit={submit} className="editor-form">
           <div className="form-grid">
-            <label className="field span-2">Game title <input required maxLength={160} autoFocus placeholder="e.g. Kingdom Come: Deliverance" value={draft.title} onChange={e => set('title', e.target.value)}/></label>
+            <label className="field span-2">Game title <input required maxLength={160} placeholder="e.g. Kingdom Come: Deliverance" value={draft.title} onChange={e => set('title', e.target.value)}/></label>
             <label className="field">Platform <input maxLength={60} placeholder="PS5, PC, Switch..." value={draft.platform} onChange={e => set('platform', e.target.value)}/></label>
             <label className="field">Release year <input type="number" min="1950" max="2200" placeholder="Optional" value={draft.year ?? ''} onChange={e => set('year', e.target.value ? Number(e.target.value) : null)}/></label>
             <label className="field">Status <select value={draft.status} onChange={e => { const status = e.target.value as GameStatus; setDraft(d => ({ ...d, status, ownership: status === 'wishlist' && d.ownership === 'digital' ? 'not-owned' : d.ownership })); }}>{STATUSES.map(s => <option value={s} key={s}>{statusLabel[s]}</option>)}</select></label>
@@ -167,6 +167,25 @@ export default function App() {
     const online = () => setIsOnline(navigator.onLine);
     window.addEventListener('online', online); window.addEventListener('offline', online);
     return () => { window.removeEventListener('online', online); window.removeEventListener('offline', online); };
+  }, []);
+  // iOS keyboards resize the *visual* viewport rather than always changing
+  // 100vh. Keep bottom sheets inside the visible area so Save/Close remain reachable.
+  useEffect(() => {
+    const visual = window.visualViewport;
+    if (!visual) return;
+    const update = () => {
+      document.documentElement.style.setProperty('--gv-visual-height', Math.max(100, Math.round(visual.height)) + 'px');
+      document.documentElement.style.setProperty('--gv-visual-top', Math.round(visual.offsetTop) + 'px');
+    };
+    update();
+    visual.addEventListener('resize', update);
+    visual.addEventListener('scroll', update);
+    return () => {
+      visual.removeEventListener('resize', update);
+      visual.removeEventListener('scroll', update);
+      document.documentElement.style.removeProperty('--gv-visual-height');
+      document.documentElement.style.removeProperty('--gv-visual-top');
+    };
   }, []);
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -301,7 +320,7 @@ export default function App() {
       setShowSettings(false);
     } catch(e) { setNotice('Import failed: ' + (e instanceof Error ? e.message : String(e))); }
   }
-  function openPage(next: Page) { setPage(next); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+  function openPage(next: Page) { setPage(next); window.scrollTo({ top: 0, behavior: 'auto' }); }
   const action = <button className="btn btn-primary" onClick={() => setEditing('new')}><Plus size={17}/> Add manually</button>;
   const searchAction = <button className="btn btn-primary" onClick={() => setShowCatalogue(true)}><Search size={17}/> Find game</button>;
   const renderCards = (items: Game[], limit?: number) => (
@@ -334,6 +353,7 @@ export default function App() {
               <BookOpen size={17}/><span>What's new</span>{hasUnreadPatchNotes && <i className="updates-dot" aria-hidden="true"/>}
             </button>
             <button className="icon-btn settings-shortcut" onClick={() => setShowSettings(true)} aria-label="Settings and backup"><Settings2 size={19}/></button>
+            <button className="icon-btn mobile-find" onClick={() => setShowCatalogue(true)} aria-label="Find a game" title="Find a game"><Search size={20}/></button>
             <div className="topbar-add">{searchAction}</div>
           </div>
         </header>

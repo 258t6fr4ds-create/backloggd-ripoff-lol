@@ -17,6 +17,13 @@ Every release must have complete notes in **both** the app's **What's New** pane
 
 The app always displays the current version and a **What's New** history, with an unread marker per browser until the latest entry is viewed. The notes remain available after the user's ChatGPT subscription ends.
 
+## iPhone layout fixes (v1.3.2)
+
+- Form inputs have readable 16px mobile text to stop iOS auto-zoom.
+- Game editor, RAWG search, cloud setup, patch notes and settings scroll inside the available visible screen, including when a software keyboard opens. Save/Cancel stays pinned at the bottom of the game editor.
+- The mobile header always shows **Find game**; controls support safe areas and narrow displays.
+- No storage schema, saved game records, connection settings or JSON backup format were changed.
+
 ## iPhone Home Screen icon (v1.3.1)
 
 Safari uses `icon-180-v1.3.1.png` as the Apple touch icon rather than falling back to the SVG favicon. On an iPhone, open GameVault's GitHub Pages URL in **Safari → Share → Add to Home Screen**. If an existing shortcut still shows the old Sidequest icon, save a JSON backup of any GameVault games first, then delete **only that GameVault shortcut** and add it again; removing a web app can remove its device-local IndexedDB storage. Do not delete Sidequest.

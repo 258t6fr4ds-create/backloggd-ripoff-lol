@@ -17,6 +17,22 @@ export interface Release {
  */
 export const RELEASE_NOTES: Release[] = [
   {
+    version: '1.3.2',
+    date: '2026-10-25',
+    title: 'Mobile usability overhaul.',
+    summary: 'Repairs iPhone input zoom, modal actions blocked by the keyboard, tiny controls, and navigation on narrow screens.',
+    changes: [
+      { type: 'Fixed', text: 'Safari input focus no longer zooms the entire screen when searching, editing games, configuring RAWG or signing into Supabase.' },
+      { type: 'Fixed', text: 'Edit, catalogue, settings, cloud sync and patch notes panels scroll inside the visible viewport, including when the iPhone keyboard opens.' },
+      { type: 'Fixed', text: 'Save, Cancel, Close and import actions remain accessible on narrow screens; form save actions are pinned at the bottom of the editor.' },
+      { type: 'Improved', text: 'A dedicated Find game icon is always available in the mobile header from every tab.' },
+      { type: 'Improved', text: 'Touch-friendly navigation and controls, more legible two-column game cards and better small-screen text wrapping.' },
+      { type: 'Improved', text: 'Better iPhone safe-area spacing, improved cloud conflict and catalogue result layouts, and fewer unintended keyboard popups.' },
+      { type: 'Fixed', text: 'Responsive form fields no longer crush into unusably narrow columns on phones.' },
+    ],
+  },
+
+  {
     version: '1.3.1',
     date: '2026-10-25',
     title: 'A GameVault icon of its own.',

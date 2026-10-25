@@ -74,7 +74,7 @@ export default function CatalogueSearch({
         {source === 'wikipedia' && <p className="catalogue-description">Search Wikipedia articles and import real thumbnail artwork when available. This is a useful no-key fallback, <strong>not</strong> a complete game catalogue. Check that the result is actually the right game.</p>}
         <form className="catalogue-searchline" onSubmit={runSearch}>
           <Search size={19}/>
-          <input autoFocus aria-label="Search game catalogue" placeholder="Try Red Dead Redemption 2…" maxLength={100} value={query} onChange={e => setQuery(e.target.value)}/>
+          <input aria-label="Search game catalogue" placeholder="Try Red Dead Redemption 2…" maxLength={100} value={query} onChange={e => setQuery(e.target.value)}/>
           <button type="submit" className="btn btn-primary" disabled={loading || (source === 'rawg' && !proxy)}>{loading ? <LoaderCircle size={16} className="spin"/> : <Search size={16}/>} Search</button>
         </form>
         {error && <div className="catalogue-error" role="alert">{error}</div>}

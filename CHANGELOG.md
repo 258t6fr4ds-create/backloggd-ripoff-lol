@@ -2,6 +2,24 @@
 
 All meaningful app updates receive dated, versioned patch notes. These match the in-app **What's New** panel. Entries list changes actually shipped, never planned features.
 
+## [1.3.2] — 2026-10-25
+**Mobile usability overhaul.**
+
+### Fixed
+- All important input and select controls are 16px or larger on mobile, preventing Safari's automatic focus zoom.
+- Search/add game modal no longer automatically opens the on-screen keyboard.
+- Modal layouts respond to the iOS visual viewport as the keyboard appears and keep save/close controls accessible.
+- Game editor uses a single-column layout on phones with a sticky action footer, avoiding inaccessible save buttons.
+- Long metadata, game names, URLs and filters no longer cause avoidable horizontal overflow.
+
+### Improved
+- Mobile header includes a persistent Find game control on every page.
+- Game cover grid is two columns with larger tap targets, while the mobile bottom navigation remains reachable above safe areas.
+- Cloud sync login/conflict handling, RAWG settings, catalogue search/import and game details receive responsive tap-target and scrolling refinements.
+- Smaller screens and landscape heights get tailored layouts.
+
+**No data changes:** All IndexedDB game records, offline sync queues, Supabase settings, RAWG Worker URLs and JSON backup formats remain unchanged.
+
 ## [1.3.1] — 2026-10-25
 **A GameVault icon of its own.**
 
