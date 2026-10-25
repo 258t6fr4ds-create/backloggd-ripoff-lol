@@ -17,6 +17,22 @@ export interface Release {
  */
 export const RELEASE_NOTES: Release[] = [
   {
+    version: '1.2.0',
+    date: '2026-10-25',
+    title: 'Real games. Real artwork.',
+    summary: 'Find real game records without typing everything yourself, with an optional richer RAWG catalogue and screenshot gallery.',
+    changes: [
+      { type: 'Added', text: 'No-key Wikipedia game/article search with real thumbnails where available.' },
+      { type: 'Added', text: 'Import search results directly into Library or Wishlist and keep source attribution.' },
+      { type: 'Added', text: 'Optional RAWG catalogue and gameplay screenshot support through a separately configured secure Worker.' },
+      { type: 'Added', text: 'Gameplay screenshot galleries on game profiles, including manually entered real image URLs.' },
+      { type: 'Improved', text: 'Expanded profiles with catalogue descriptions, image galleries and source links.' },
+      { type: 'Improved', text: 'Existing IndexedDB records and JSON backups remain compatible; no library reset.' },
+      { type: 'Added', text: 'Browser-only connection instructions for RAWG; its API key never enters public GitHub code.' },
+    ],
+  },
+
+  {
     version: '0.1.1',
     date: '2026-10-25',
     title: 'Patch notes, permanently.',

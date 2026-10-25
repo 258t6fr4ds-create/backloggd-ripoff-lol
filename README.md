@@ -17,6 +17,14 @@ Every release must have complete notes in **both** the app's **What's New** pane
 
 The app always displays the current version and a **What's New** history, with an unread marker per browser until the latest entry is viewed. The notes remain available after the user's ChatGPT subscription ends.
 
+## v1.2 — Catalogue and media
+
+- **Find game** uses public Wikipedia search without an API key; verify correct game articles. Results may include genuine artwork if supplied by Wikipedia.
+- A user-configured Cloudflare Worker enables **RAWG** catalogue search and real game screenshots, requiring a separately obtained free RAWG API key held by the Worker.
+- Imported data includes source attribution, an optional game description, screenshots and artwork URLs.
+- Existing game records and JSON backups are preserved. Media backups contain links, **not image bytes**.
+- See [CATALOG_SETUP.md](CATALOG_SETUP.md) for optional API configuration. No laptop installations are necessary.
+
 ## v0.1 — Foundation
 
 - Home, Library, Discover, Wishlist, and Statistics
@@ -29,7 +37,7 @@ The app always displays the current version and a **What's New** history, with a
 - Responsive design, GitHub Pages deployment, installable PWA shell
 - No paid services, installation, account system, or ChatGPT runtime dependency
 
-**Important:** This version does **not** connect to a catalogue API or automatically retrieve screenshots and covers. It supports real image URLs entered by the user. RAWG/SteamGridDB integrations and personal screenshots are planned, pending API terms, secure credentials, and storage decisions. JSON backups preserve artwork *links*, not image bytes. Your data is stored **per browser/device**; GitHub Pages does not sync it.
+**Important:** Wikipedia search is built in. RAWG game screenshots and metadata require optional Worker configuration. Direct PS5 captures and media-inclusive backups are not yet implemented. JSON backups preserve artwork and screenshot *links*, not image bytes. Your data is stored **per browser/device**; GitHub Pages does not sync it.
 
 ## Deploying without installing software
 

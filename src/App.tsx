@@ -14,6 +14,9 @@ import {
 } from './types';
 import type { Game, GameInput, GameStatus, Ownership } from './types';
 import { APP_VERSION } from './releaseNotes';
+import CatalogueSearch from './CatalogueSearch';
+import type { CatalogueGame } from './catalog';
+import { readRawgProxy, saveRawgProxy } from './catalog';
 import PatchNotes from './PatchNotes';
 
 type Page = 'home' | 'library' | 'discover' | 'wishlist' | 'stats';
@@ -74,7 +77,10 @@ function GameForm({ initial, onClose, onSave }: {
 }) {
   const [draft, setDraft] = useState<GameInput>(() => initial ? {
     title: initial.title, year: initial.year, platform: initial.platform, genres: initial.genres,
-    coverUrl: initial.coverUrl, status: initial.status, ownership: initial.ownership,
+    coverUrl: initial.coverUrl, description: initial.description,
+    catalogId: initial.catalogId, catalogUrl: initial.catalogUrl,
+    catalogSource: initial.catalogSource, screenshots: initial.screenshots ?? [],
+    status: initial.status, ownership: initial.ownership,
     rating: initial.rating, hours: initial.hours, notes: initial.notes,
     completedAt: initial.completedAt, priceTarget: initial.priceTarget, favourite: initial.favourite,
   } : { ...emptyGame });
@@ -102,6 +108,7 @@ function GameForm({ initial, onClose, onSave }: {
             <label className="field">Hours played <input type="number" min="0" max="1000000" step="0.1" value={draft.hours} onChange={e => set('hours', e.target.value === '' ? 0 : Number(e.target.value))}/></label>
             <label className="field span-2">Genres <input maxLength={240} placeholder="RPG, Open World, Adventure" value={draft.genres} onChange={e => set('genres', e.target.value)}/><span className="field-help">Separate genres with commas.</span></label>
             <label className="field span-2">Cover image URL <input type="url" maxLength={2048} placeholder="https://... (real artwork only)" value={draft.coverUrl} onChange={e => set('coverUrl', e.target.value)}/><span className="field-help">Optional. Paste a direct image link; no AI-generated artwork.</span></label>
+            <label className="field span-2">Gameplay screenshot URLs <textarea rows={3} placeholder={'https://example.com/screenshot-1.jpg\nhttps://example.com/screenshot-2.jpg'} value={(draft.screenshots ?? []).join('\n')} onChange={e => set('screenshots', e.target.value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean).slice(0,40))}/><span className="field-help">One direct image URL per line. Use your own captures or images you have permission to link to. Images are linked, not uploaded.</span></label>
             <label className="field">Completion date <input type="date" value={draft.completedAt} onChange={e => set('completedAt', e.target.value)}/></label>
             <label className="field">Wishlist target (AUD) <input type="number" min="0" step="0.01" placeholder="Optional" value={draft.priceTarget ?? ''} onChange={e => set('priceTarget', e.target.value === '' ? null : Number(e.target.value))}/></label>
             <label className="field span-2">Your notes <textarea maxLength={15000} rows={4} placeholder="Your thoughts, progress, favourite moments..." value={draft.notes} onChange={e => set('notes', e.target.value)}/></label>
@@ -126,6 +133,9 @@ export default function App() {
   const [editing, setEditing] = useState<Game | 'new' | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [showCatalogue, setShowCatalogue] = useState(false);
+  const [workerAddress, setWorkerAddress] = useState(readRawgProxy);
+  const [workerInput, setWorkerInput] = useState(readRawgProxy);
   const [showPatchNotes, setShowPatchNotes] = useState(false);
   const [seenRelease, setSeenRelease] = useState(() => {
     try { return localStorage.getItem('gamevault:seenRelease') || ''; }
@@ -157,15 +167,15 @@ export default function App() {
   }, []);
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') { setEditing(null); setSelectedId(null); setShowSettings(false); setShowPatchNotes(false); }
+      if (event.key === 'Escape') { setEditing(null); setSelectedId(null); setShowSettings(false); setShowPatchNotes(false); setShowCatalogue(false); }
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, []);
   useEffect(() => {
-    document.body.style.overflow = editing || selectedId || showSettings || showPatchNotes ? 'hidden' : '';
+    document.body.style.overflow = editing || selectedId || showSettings || showPatchNotes || showCatalogue ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
-  }, [editing, selectedId, showSettings, showPatchNotes]);
+  }, [editing, selectedId, showSettings, showPatchNotes, showCatalogue]);
 
   const selected = games.find(g => g.id === selectedId) ?? null;
   const collection = games.filter(g => g.status !== 'wishlist');
@@ -204,6 +214,41 @@ export default function App() {
       setNotice(old ? 'Game updated.' : 'Game added to your collection.');
       return true;
     } catch (e) { setNotice('Could not save: ' + String(e)); return false; }
+  }
+  async function importCatalogue(entry: CatalogueGame, status: GameStatus): Promise<boolean> {
+    const exists = games.find(g => (g.catalogId && g.catalogId === entry.id) ||
+      (g.title.toLowerCase() === entry.title.toLowerCase() && g.year === entry.year));
+    if (exists) {
+      setNotice('That game is already in your library. Open it there to edit it.');
+      return false;
+    }
+    const now = new Date().toISOString();
+    const game: Game = {
+      ...emptyGame,
+      id: crypto.randomUUID(),
+      title: entry.title.slice(0, 160), year: entry.year, platform: '',
+      genres: entry.genres.slice(0, 240), coverUrl: entry.coverUrl,
+      description: entry.description.slice(0, 5000),
+      catalogId: entry.id, catalogUrl: entry.sourceUrl, catalogSource: entry.source,
+      screenshots: entry.screenshots.filter(safeCover).slice(0, 40),
+      status, ownership: 'not-owned', addedAt: now, updatedAt: now,
+    };
+    try {
+      await saveGame(game);
+      setGames(old => [...old, game]);
+      setNotice('Imported ' + game.title + '. Edit it to set your platform and ownership.');
+      return true;
+    } catch (error) {
+      setNotice('Could not import: ' + String(error));
+      return false;
+    }
+  }
+  function saveWorkerAddress() {
+    try {
+      const saved = saveRawgProxy(workerInput);
+      setWorkerAddress(saved);
+      setNotice(saved ? 'RAWG Worker address saved on this device.' : 'RAWG Worker connection cleared.');
+    } catch (error) { setNotice(error instanceof Error ? error.message : String(error)); }
   }
   async function patchGame(game: Game, change: Partial<Game>) {
     const next = { ...game, ...change, updatedAt: new Date().toISOString() };
@@ -251,7 +296,8 @@ export default function App() {
     } catch(e) { setNotice('Import failed: ' + (e instanceof Error ? e.message : String(e))); }
   }
   function openPage(next: Page) { setPage(next); window.scrollTo({ top: 0, behavior: 'smooth' }); }
-  const action = <button className="btn btn-primary" onClick={() => setEditing('new')}><Plus size={17}/> Add game</button>;
+  const action = <button className="btn btn-primary" onClick={() => setEditing('new')}><Plus size={17}/> Add manually</button>;
+  const searchAction = <button className="btn btn-primary" onClick={() => setShowCatalogue(true)}><Search size={17}/> Find game</button>;
   const renderCards = (items: Game[], limit?: number) => (
     <div className="game-grid">{(limit ? items.slice(0,limit) : items).map(g => <GameCard key={g.id} game={g} onClick={() => setSelectedId(g.id)}/>)}</div>
   );
@@ -280,7 +326,7 @@ export default function App() {
               <BookOpen size={17}/><span>What's new</span>{hasUnreadPatchNotes && <i className="updates-dot" aria-hidden="true"/>}
             </button>
             <button className="icon-btn settings-shortcut" onClick={() => setShowSettings(true)} aria-label="Settings and backup"><Settings2 size={19}/></button>
-            <div className="topbar-add">{action}</div>
+            <div className="topbar-add">{searchAction}</div>
           </div>
         </header>
         <div className="page-content">
@@ -290,7 +336,7 @@ export default function App() {
             <>
               {page === 'home' && <>
                 <section className="hero">
-                  <div className="hero-copy"><div className="eyebrow eyebrow-light"><span className="live-dot"/> YOUR PERSONAL GAMING HQ</div><h1>Your games.<br/><em>All in one place.</em></h1><p>Track what you love. Remember what you played. Find what's next.</p><div className="hero-actions">{action}<button className="btn btn-outline-light" onClick={() => openPage('library')}>Explore library <ArrowRight size={17}/></button></div></div>
+                  <div className="hero-copy"><div className="eyebrow eyebrow-light"><span className="live-dot"/> YOUR PERSONAL GAMING HQ</div><h1>Your games.<br/><em>All in one place.</em></h1><p>Track what you love. Remember what you played. Find what's next.</p><div className="hero-actions">{searchAction}<button className="btn btn-outline-light" onClick={() => setEditing('new')}>Add manually <Plus size={17}/></button></div></div>
                   <div className="hero-illustration" aria-hidden="true"><div className="hero-orbit orbit-one"/><div className="hero-orbit orbit-two"/><Gamepad2 size={134} strokeWidth={0.85}/></div>
                 </section>
                 <div className="stat-grid">
@@ -300,21 +346,21 @@ export default function App() {
                   <StatCard icon={<Clock3 size={18}/>} value={fmtHours(totalHours) + 'h'} label="Hours logged"/>
                 </div>
                 <section className="section-block"><div className="section-title"><div><span className="eyebrow">PICK UP WHERE YOU LEFT OFF</span><h2>Currently playing</h2></div><button className="text-link" onClick={() => openPage('library')}>View library <ArrowRight size={16}/></button></div>
-                  {playing.length ? renderCards(playing, 6) : <Empty title="Nothing in progress yet" description="Add a game and set its status to Playing. It'll show up here." action={<button className="btn btn-subtle" onClick={() => setEditing('new')}><Plus size={16}/> Add a game</button>}/>}
+                  {playing.length ? renderCards(playing, 6) : <Empty title="Nothing in progress yet" description="Find a game and set its status to Playing. It'll show up here." action={<button className="btn btn-subtle" onClick={() => setShowCatalogue(true)}><Search size={16}/> Find game</button>}/>}
                 </section>
                 <section className="section-block"><div className="section-title"><div><span className="eyebrow">ON DECK</span><h2>From your backlog</h2></div><button className="text-link" onClick={() => openPage('discover')}>What should I play? <ArrowRight size={16}/></button></div>
                   {queue.length ? renderCards(queue, 6) : <Empty icon={<LayoutGrid size={28}/>} title="A clean slate" description="Games marked Backlog or On hold appear here. Nothing is added automatically."/>}
                 </section>
               </>}
               {page === 'library' && <>
-                <div className="page-heading"><div><span className="eyebrow">ALL YOUR GAMES</span><h1>Your library<span className="heading-count">{games.length}</span></h1><p>Every adventure, all in one place.</p></div>{action}</div>
+                <div className="page-heading"><div><span className="eyebrow">ALL YOUR GAMES</span><h1>Your library<span className="heading-count">{games.length}</span></h1><p>Every adventure, all in one place.</p></div><div className="library-actionrow">{searchAction}{action}</div></div>
                 <div className="filterbar">
                   <div className="search-field"><Search size={18}/><input aria-label="Search games" placeholder="Search titles, genres, notes..." value={query} onChange={e => setQuery(e.target.value)}/>{query && <button aria-label="Clear search" onClick={() => setQuery('')}><X size={16}/></button>}</div>
                   <label className="select-wrap"><Filter size={16}/><select aria-label="Filter by status" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}><option value="all">All statuses</option>{STATUSES.map(s => <option key={s} value={s}>{statusLabel[s]}</option>)}</select><ChevronDown size={15}/></label>
                   <label className="select-wrap"><SlidersHorizontal size={16}/><select aria-label="Sort games" value={sort} onChange={e => setSort(e.target.value as Sort)}><option value="recent">Recently updated</option><option value="title">Title A–Z</option><option value="rating">Top rated</option><option value="hours">Most played</option><option value="year">Newest release</option></select><ChevronDown size={15}/></label>
                 </div>
                 <div className="results-line">{sortedLibrary.length} {sortedLibrary.length === 1 ? 'game' : 'games'} found</div>
-                {sortedLibrary.length ? renderCards(sortedLibrary) : games.length ? <Empty icon={<Search size={28}/>} title="No games match" description="Try changing the search or filters." action={<button className="btn btn-subtle" onClick={() => {setQuery('');setStatusFilter('all');}}>Clear filters</button>}/> : <Empty title="Your library starts here" description="Add your first game. Your collection will stay saved on this device." action={<button className="btn btn-primary" onClick={() => setEditing('new')}><Plus size={17}/> Add first game</button>}/>}
+                {sortedLibrary.length ? renderCards(sortedLibrary) : games.length ? <Empty icon={<Search size={28}/>} title="No games match" description="Try changing the search or filters." action={<button className="btn btn-subtle" onClick={() => {setQuery('');setStatusFilter('all');}}>Clear filters</button>}/> : <Empty title="Your library starts here" description="Add your first game. Your collection will stay saved on this device." action={<button className="btn btn-primary" onClick={() => setShowCatalogue(true)}><Search size={17}/> Find first game</button>}/>}
               </>}
               {page === 'discover' && <>
                 <div className="page-heading"><div><span className="eyebrow">MAKE A CHOICE</span><h1>Discover</h1><p>A little help deciding what to play next.</p></div></div>
@@ -328,8 +374,8 @@ export default function App() {
                 {favourites.length > 0 && <section className="section-block"><div className="section-title"><div><span className="eyebrow">YOUR HIGHLIGHTS</span><h2>All-time favourites</h2></div></div>{renderCards(favourites, 6)}</section>}
               </>}
               {page === 'wishlist' && <>
-                <div className="page-heading"><div><span className="eyebrow">COMING UP</span><h1>Wishlist<span className="heading-count">{wishlist.length}</span></h1><p>Games you want, without losing track of what they cost.</p></div>{action}</div>
-                {wishlist.length ? <>{renderCards(wishlist)}<div className="muted-note"><Heart size={17}/> Prices are targets you enter yourself. This version doesn't pretend to show live PS Store prices.</div></> : <Empty icon={<Heart size={28}/>} title="Nothing on your wishlist" description="Add a game with its status set to Wishlist. Set an AUD target price if you like." action={<button className="btn btn-primary" onClick={() => setEditing('new')}><Plus size={17}/> Add wanted game</button>}/>}
+                <div className="page-heading"><div><span className="eyebrow">COMING UP</span><h1>Wishlist<span className="heading-count">{wishlist.length}</span></h1><p>Games you want, without losing track of what they cost.</p></div><div className="library-actionrow">{searchAction}{action}</div></div>
+                {wishlist.length ? <>{renderCards(wishlist)}<div className="muted-note"><Heart size={17}/> Prices are targets you enter yourself. This version doesn't pretend to show live PS Store prices.</div></> : <Empty icon={<Heart size={28}/>} title="Nothing on your wishlist" description="Add a game with its status set to Wishlist. Set an AUD target price if you like." action={<button className="btn btn-primary" onClick={() => setShowCatalogue(true)}><Search size={17}/> Find wanted game</button>}/>}
               </>}
               {page === 'stats' && <>
                 <div className="page-heading"><div><span className="eyebrow">YOUR PLAY HISTORY</span><h1>Statistics</h1><p>Numbers calculated from the games you've logged.</p></div></div>
@@ -362,15 +408,27 @@ export default function App() {
           <div className="detail-main"><Cover game={selected} className="detail-cover"/><div className="detail-copy"><span className="eyebrow">{selected.platform}{selected.year ? ' / ' + selected.year : ''}</span><h2>{selected.title}</h2><div className="detail-pills"><Pill tone={'status-'+selected.status}>{statusLabel[selected.status]}</Pill><Pill>{ownershipLabel[selected.ownership]}</Pill>{selected.favourite && <Pill><Heart size={12} fill="currentColor"/> Favourite</Pill>}</div><p className="detail-genres">{selected.genres || 'No genres added yet'}</p><div className="detail-actions"><button className="btn btn-primary" onClick={() => { setEditing(selected); setSelectedId(null); }}><Pencil size={16}/> Edit game</button><button className="btn btn-subtle" onClick={() => patchGame(selected,{favourite: !selected.favourite})}><Heart size={16} fill={selected.favourite ? 'currentColor' : 'none'}/> {selected.favourite ? 'Unfavourite' : 'Favourite'}</button></div></div></div>
           <div className="detail-stats"><div><strong>{selected.rating !== null ? selected.rating+'/10' : '—'}</strong><span>Your rating</span></div><div><strong>{fmtHours(selected.hours)}h</strong><span>Playtime logged</span></div><div><strong>{dateLabel(selected.completedAt)}</strong><span>Completed</span></div></div>
           {selected.status === 'wishlist' && selected.priceTarget !== null && <div className="note-box">Your target price: <strong>{currency(selected.priceTarget)}</strong> AUD tracking only — not a live quote.</div>}
+          {selected.description && <div className="detail-description"><span className="eyebrow">ABOUT THE GAME</span><p>{selected.description}</p></div>}
+          {(selected.screenshots ?? []).filter(safeCover).length > 0 && <div className="detail-gallery"><div className="detail-gallery-title"><span className="eyebrow">REAL SCREENSHOTS</span><span>{selected.screenshots?.length ?? 0} images</span></div><div className="detail-gallery-strip">{(selected.screenshots ?? []).filter(safeCover).map((url,i) => <a key={url+'-'+i} href={url} target="_blank" rel="noopener noreferrer"><img loading="lazy" src={url} alt={selected.title + ' screenshot ' + (i+1)}/></a>)}</div><small>External image links. Open an image to see it full size.</small></div>}
+          {selected.catalogUrl && safeCover(selected.catalogUrl) && <div className="detail-catalog-source">Game information and artwork: <a href={selected.catalogUrl} target="_blank" rel="noopener noreferrer">{selected.catalogSource === 'rawg' ? 'RAWG' : 'Wikipedia'} ↗</a></div>}
           <div className="detail-notes"><span className="eyebrow">YOUR NOTES</span><p>{selected.notes || 'No notes yet. Edit this game to add your thoughts or progress.'}</p></div>
           <footer className="detail-footer"><small>Added {dateLabel(selected.addedAt)} · Updated {dateLabel(selected.updatedAt)}</small><button className="danger-link" onClick={() => deleteGame(selected)}><Trash2 size={16}/> Remove game</button></footer>
         </section>
       </div>}
       {editing && <GameForm key={editing === 'new' ? 'new' : editing.id} initial={editing === 'new' ? null : editing} onClose={() => setEditing(null)} onSave={persist}/>}
+      {showCatalogue && <CatalogueSearch onClose={() => setShowCatalogue(false)} onImport={importCatalogue} onOpenSettings={() => {setShowCatalogue(false);setShowSettings(true);}}/>}
       {showPatchNotes && <PatchNotes onClose={() => setShowPatchNotes(false)}/>}
       {showSettings && <div className="modal-backdrop" onMouseDown={e => { if(e.target === e.currentTarget) setShowSettings(false); }}>
         <section className="modal settings-modal" role="dialog" aria-modal="true" aria-label="Settings and backups"><header className="modal-heading"><div><span className="eyebrow">PREFERENCES</span><h2>Settings & backups</h2></div><button className="icon-btn" onClick={() => setShowSettings(false)} aria-label="Close"><X size={20}/></button></header>
           <div className="settings-content"><div className="settings-callout"><ShieldCheck size={22}/><div><strong>Your data belongs to you.</strong><p>Saved on this browser using IndexedDB. GitHub Pages does not sync devices. Export regularly; browser data can be cleared.</p></div></div>
+            <div className="settings-catalogue">
+              <span className="eyebrow">GAME CATALOGUE</span>
+              <h3>Optional RAWG connection</h3>
+              <p>Wikipedia search works without setup. To use RAWG's dedicated game catalogue and screenshot API, connect your own HTTPS Cloudflare Worker. The RAWG API key stays in the Worker, not in GameVault.</p>
+              <div className="settings-worker"><input type="url" aria-label="RAWG Worker HTTPS URL" placeholder="https://your-worker.workers.dev" value={workerInput} onChange={e=>setWorkerInput(e.target.value)} /><button className="btn btn-subtle" onClick={saveWorkerAddress}>Save</button></div>
+              <small>{workerAddress ? 'Worker configured on this device.' : 'No Worker connected. Keyless Wikipedia search is still available.'}</small>
+              <a href="https://github.com/258t6fr4ds-create/backloggd-ripoff-lol/blob/main/CATALOG_SETUP.md" target="_blank" rel="noopener noreferrer">Read browser-only setup instructions ↗</a>
+            </div>
             <button className="setting-action" onClick={openPatchNotes}><span className="setting-icon"><BookOpen size={20}/></span><span><strong>What's new in GameVault</strong><small>Patch notes, improvements and fixes · v{APP_VERSION}</small></span><ArrowRight size={18}/></button>
             <button className="setting-action" onClick={exportBackup}><span className="setting-icon"><Download size={20}/></span><span><strong>Export your library</strong><small>Download all game records as a JSON backup</small></span><ArrowRight size={18}/></button>
             <button className="setting-action" onClick={() => importRef.current?.click()}><span className="setting-icon"><Upload size={20}/></span><span><strong>Import a backup</strong><small>Merge game records from another device or browser</small></span><ArrowRight size={18}/></button>

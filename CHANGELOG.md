@@ -2,6 +2,23 @@
 
 All meaningful app updates receive dated, versioned patch notes. These match the in-app **What's New** panel. Entries list changes actually shipped, never planned features.
 
+## [1.2.0] — 2026-10-25
+**Real games. Real artwork.**
+
+### Added
+- Browser-native Wikipedia game/article search with real images when Wikipedia supplies them.
+- One-click catalogue import into your game library or wishlist.
+- Optional dedicated RAWG game catalogue via a securely configured Cloudflare Worker (requires user's own key).
+- Real gameplay screenshot galleries in imported game profiles and manual screenshot URL editing.
+- Source attribution, descriptions and links in game profiles.
+- Browser-only `CATALOG_SETUP.md` guide and Worker code.
+
+### Improved
+- Mobile-friendly catalogue results, search and image previews.
+- Preserve all previous saved games while adding optional new metadata fields.
+
+**Scope:** Wikipedia search works without configuration, though it is incomplete and may return unrelated articles. RAWG search and screenshot fetching require a separately deployed Worker. No paid API or generated artwork is part of the default app.
+
 ## [0.1.1] — 2026-10-25
 **Patch notes, permanently.**
 

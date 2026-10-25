@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import type { FormEvent } from 'react';
 import { ArrowRight, Check, ExternalLink, Gamepad2, Image, LoaderCircle, Plus, Search, X } from 'lucide-react';
 import { fetchRawgScreenshots, readRawgProxy, searchRawg, searchWikipedia } from './catalog';
 import type { CatalogueGame, CatalogueSource } from './catalog';
@@ -37,7 +38,7 @@ export default function CatalogueSearch({
     return () => ctl.abort();
   }, [selected, proxy]);
 
-  async function runSearch(event: React.FormEvent) {
+  async function runSearch(event: FormEvent) {
     event.preventDefault();
     if (query.trim().length < 2) { setError('Enter at least two characters.'); return; }
     controller.current?.abort();

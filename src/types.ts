@@ -11,6 +11,11 @@ export interface Game {
   platform: string;
   genres: string;
   coverUrl: string;
+  description?: string;
+  screenshots?: string[];
+  catalogId?: string;
+  catalogUrl?: string;
+  catalogSource?: 'rawg' | 'wikipedia';
   status: GameStatus;
   ownership: Ownership;
   rating: number | null;
@@ -62,6 +67,11 @@ export function normalizeGame(raw: unknown): Game | null {
     platform: text('platform', 'PS5').slice(0, 60),
     genres: text('genres').slice(0, 240),
     coverUrl: text('coverUrl').slice(0, 2048),
+    description: text('description').slice(0, 5000),
+    screenshots: Array.isArray(g.screenshots) ? g.screenshots.filter((url): url is string => typeof url === 'string' && !!safeCover(url)).slice(0, 40) : [],
+    catalogId: text('catalogId').slice(0, 120),
+    catalogUrl: safeCover(text('catalogUrl').slice(0, 2048)),
+    catalogSource: g.catalogSource === 'rawg' || g.catalogSource === 'wikipedia' ? g.catalogSource : undefined,
     status: STATUSES.includes(g.status as GameStatus) ? g.status as GameStatus : 'backlog',
     ownership: OWNERSHIPS.includes(g.ownership as Ownership) ? g.ownership as Ownership : 'not-owned',
     rating: numberOrNull(g.rating, 10),
