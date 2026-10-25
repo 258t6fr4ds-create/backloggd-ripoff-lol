@@ -81,6 +81,7 @@ export async function searchWikipedia(query: string, signal?: AbortSignal): Prom
 
 type RawgGame = {
   id?: number; name?: string; released?: string; background_image?: string; added?: number;
+  ratings_count?: number;
   slug?: string; genres?: { name?: string }[]; platforms?: { platform?: { name?: string } }[];
   short_screenshots?: { image?: string; is_deleted?: boolean }[];
 };
@@ -127,6 +128,24 @@ function searchPriority(title: string, query: string): number {
   return words.every(word => name.includes(word)) ? 36 : 0;
 }
 
+/** Rank search results by title relevance band first, then RAWG popularity
+ * within each band. 'added' measures user library additions; ratings_count
+ * provides a modest fallback when additions are missing.
+ * Keep the exact queried title at the top over unrelated popular games.
+ */
+function relevanceBand(score: number): number {
+  if (score === 100) return 3;
+  if (score >= 78) return 2;
+  if (score >= 60) return 1;
+  return 0;
+}
+function rawgPopularity(game: RawgGame): number {
+  const added = typeof game.added === 'number' && Number.isFinite(game.added) ? Math.max(0, game.added) : 0;
+  const ratings = typeof game.ratings_count === 'number' && Number.isFinite(game.ratings_count)
+    ? Math.max(0, game.ratings_count) : 0;
+  return added + ratings * 0.25;
+}
+
 export async function searchRawg(query: string, proxy: string, signal?: AbortSignal, includeExtras = false): Promise<CatalogueGame[]> {
   if (!proxy) throw new Error('Connect your RAWG Worker in Settings first.');
   const url = new URL(proxy + '/games');
@@ -140,8 +159,14 @@ export async function searchRawg(query: string, proxy: string, signal?: AbortSig
   return (data.results ?? [])
     .filter((game): game is RawgGame => typeof game.id === 'number' && game.id > 0 && typeof game.name === 'string' && game.name.trim().length > 0)
     .filter(game => includeExtras || !isPeripheralExtra(game.name!))
-    .sort((a, b) => searchPriority(b.name!, query) - searchPriority(a.name!, query)
-      || Math.log1p(b.added ?? 0) - Math.log1p(a.added ?? 0))
+    .sort((a, b) => {
+      const aRelevance = searchPriority(a.name!, query);
+      const bRelevance = searchPriority(b.name!, query);
+      return relevanceBand(bRelevance) - relevanceBand(aRelevance)
+        || rawgPopularity(b) - rawgPopularity(a)
+        || bRelevance - aRelevance
+        || a.name!.localeCompare(b.name!);
+    })
     .map(mapRawgGame);
 }
 export async function fetchRawgScreenshots(gameId: string, proxy: string, signal?: AbortSignal): Promise<string[]> {

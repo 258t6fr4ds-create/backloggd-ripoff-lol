@@ -2,6 +2,22 @@
 
 All meaningful app updates receive dated, versioned patch notes. These match the in-app **What's New** panel. Entries list changes actually shipped, never planned features.
 
+## [1.3.6] — 2026-10-26
+**Better searches, tidier layout.**
+
+### Fixed
+- Search clear-X now remains beside the input instead of moving onto a second row when typing on narrow mobile screens.
+- Narrow iPhone manual Search action becomes a compact icon, preserving room for typing and the X without horizontal overflow.
+
+### Improved
+- RAWG suggestions rank exact title matches first, group other matches by text relevance, and sort by RAWG popularity within each group.
+- Popularity uses RAWG's `added` library-additions count with `ratings_count` as a smaller supporting signal, rather than sorting nearly everything by minor text score differences.
+- Game/DLC filtering and Wikipedia fallback remain unchanged.
+
+**Note:** Popularity ordering applies to the candidate results supplied by the existing RAWG Worker (its current page size is 15); it is not an exhaustive global ranking. No Worker redeployment or database migration required.
+
+**Data safety:** All existing IndexedDB games, sync settings, queue, Supabase records and backups are preserved.
+
 ## [1.3.5] — 2026-10-26
 **Find games as you type.**
 

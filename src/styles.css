@@ -582,3 +582,43 @@ h1,h2,h3{font-family:Manrope,'DM Sans',sans-serif}
  .catalogue-clear{min-width:34px}
  .catalogue-showmore{min-height:48px}
 }
+
+
+/* v1.3.6: keep the input clear-X in the search row even on narrow iPhones. */
+@media(max-width:650px){
+  .catalogue-searchline{flex-wrap:nowrap;gap:6px}
+  .catalogue-searchline>svg{flex:0 0 auto}
+  .catalogue-searchline>input{
+    flex:1 1 0;
+    width:0;
+    min-width:0;
+  }
+  .catalogue-searchline>.catalogue-clear{
+    flex:0 0 34px;
+    width:34px;
+    min-width:34px;
+    margin:0;
+  }
+  .catalogue-searchline>.btn{
+    flex:0 0 auto;
+    min-width:0;
+    white-space:nowrap;
+  }
+}
+@media(max-width:390px){
+  .catalogue-searchline{flex-wrap:nowrap}
+  .catalogue-searchline>input{
+    flex:1 1 0;
+    width:0;
+    min-width:0;
+  }
+  .catalogue-searchline>.btn{
+    flex:0 0 44px;
+    width:44px;
+    min-height:44px;
+    padding:0;
+    gap:0;
+    font-size:0;
+  }
+  .catalogue-searchline>.btn svg{width:19px;height:19px}
+}

@@ -182,7 +182,7 @@ export default function CatalogueSearch({
         </div>
         {source === 'rawg' && !proxy && <div className="catalogue-hint">Connect your Cloudflare RAWG Worker once in Settings to enable real game results and live suggestions on this device. <button onClick={onOpenSettings}>Connect RAWG <ArrowRight size={14}/></button> Or use the Wikipedia fallback above.</div>}
         {source === 'rawg' && proxy && <div className="catalogue-typebar">
-          <span>Showing games, expansions and DLC</span>
+          <span>Games and DLC · Popular matches first</span>
           <label><input type="checkbox" checked={includeExtras} onChange={e => setIncludeExtras(e.target.checked)}/> Include soundtracks, demos and extras</label>
         </div>}
         {source === 'wikipedia' && <p className="catalogue-description">Wikipedia is a fallback for missing games. Search results may include unrelated articles; RAWG is the default game catalogue.</p>}
@@ -195,7 +195,7 @@ export default function CatalogueSearch({
             placeholder="Start typing a game title…" autoComplete="off" maxLength={100}
             value={query} onChange={e => changeQuery(e.target.value)} onKeyDown={onQueryKeyDown}/>
           {query && <button type="button" className="catalogue-clear" onClick={() => changeQuery('')} aria-label="Clear search"><X size={17}/></button>}
-          <button type="submit" className="btn btn-primary" disabled={source === 'rawg' && !proxy}>{loading ? <LoaderCircle size={16} className="spin"/> : <Search size={16}/>} Search</button>
+          <button type="submit" className="btn btn-primary" aria-label="Search games" disabled={source === 'rawg' && !proxy}>{loading ? <LoaderCircle size={16} className="spin"/> : <Search size={16}/>} Search</button>
         </form>
         <div className="catalogue-live-status" role="status" aria-live="polite">
           {loading ? 'Finding matching games…' : !selected && searched && !error ? (results.length ? results.length + ' matches suggested' : 'No matches found') : ''}
@@ -204,7 +204,7 @@ export default function CatalogueSearch({
         {!selected ? <>
           {query.trim().length < 2 && !error && <div className="catalogue-start"><Gamepad2 size={29}/><h3>Search real games and DLC.</h3><p>Start typing at least two characters to see live matches. Tap a suggestion to preview artwork, screenshots and details before adding it.</p></div>}
           {query.trim().length >= 2 && !loading && visibleResults.length > 0 && <div className="catalogue-results" id="catalogue-suggestions" role="listbox" aria-label="Suggested game matches">
-            <div className="catalogue-result-count">Suggestions from {source === 'rawg' ? 'RAWG' : 'Wikipedia'} · Select a game or expansion</div>
+            <div className="catalogue-result-count">{source === 'rawg' ? 'Popular matching games and DLC first' : 'Wikipedia article matches'} · Select a result</div>
             {visibleResults.map((game, index) => <button key={game.id} id={'catalogue-option-' + index} type="button"
               role="option" aria-selected={highlighted === index} className={'catalogue-result' + (highlighted === index ? ' keyboard-active' : '')}
               onMouseEnter={() => setHighlighted(index)} onClick={() => choose(game)}>

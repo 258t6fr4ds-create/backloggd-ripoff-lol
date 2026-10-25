@@ -17,6 +17,13 @@ Every release must have complete notes in **both** the app's **What's New** pane
 
 The app always displays the current version and a **What's New** history, with an unread marker per browser until the latest entry is viewed. The notes remain available after the user's ChatGPT subscription ends.
 
+## v1.3.6 — Mobile search bar and popularity
+
+- The clear-search X stays on the same horizontal row as the input on all iPhone widths.
+- On very narrow screens, Search becomes an accessible icon button to make space for input and X.
+- RAWG games and DLC are ranked by match relevance, then by popularity from RAWG's public library-additions count (`added`) and rating count (`ratings_count`). Exact matches stay on top. The existing Worker currently serves up to 15 candidate results per query.
+- No RAWG Worker redeployment, migration or device-data reset required.
+
 ## v1.3.5 — Search suggestions and games first
 
 - **Find game** now defaults to **RAWG**, using the existing configured Cloudflare Worker.

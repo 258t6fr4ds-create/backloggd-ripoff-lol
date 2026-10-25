@@ -17,6 +17,19 @@ export interface Release {
  */
 export const RELEASE_NOTES: Release[] = [
   {
+    version: '1.3.6',
+    date: '2026-10-26',
+    title: 'Better searches, tidier layout.',
+    summary: 'Keeps the search clear button on the same line while putting popular RAWG games and DLC near the top.',
+    changes: [
+      { type: 'Fixed', text: 'The clear-search X remains next to the typing field on small iPhones instead of wrapping to a second row.' },
+      { type: 'Improved', text: 'On narrow iPhones the manual Search button becomes a compact icon so the title field and clear button have room.' },
+      { type: 'Improved', text: 'RAWG suggestions are now ordered by game popularity (library additions, supplemented by rating count) within title-relevance groups.' },
+      { type: 'Improved', text: 'Exact title matches still come first, keeping highly popular but unrelated titles from crowding out what you searched for.' },
+    ],
+  },
+
+  {
     version: '1.3.5',
     date: '2026-10-26',
     title: 'Find games as you type.',
