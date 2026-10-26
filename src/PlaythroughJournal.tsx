@@ -19,6 +19,11 @@ type JournalForm = {
 
 const LIMIT_RUNS = 50;
 const LIMIT_ENTRIES = 200;
+const SAFE_CLOUD_RECORD_BYTES = 180000;
+function safeToSync(game: Game, update: Partial<Game>): boolean {
+  try { return new TextEncoder().encode(JSON.stringify({...game,...update})).byteLength < SAFE_CLOUD_RECORD_BYTES; }
+  catch { return false; }
+}
 const emptyRun: RunForm = {
   title:'', status:'in-progress', startDate:'', endDate:'', hours:'0', notes:''
 };
@@ -96,11 +101,16 @@ export default function PlaythroughJournal({
       startDate:runDraft.startDate,endDate:runDraft.endDate,hours,notes:runDraft.notes.slice(0,4000),
       createdAt:original?.createdAt??now,updatedAt:now
     };
+    const update:Partial<Game>={playthroughs:original
+      ? runs.map(run=>run.id===original.id?next:run)
+      : [...runs,next]};
+    if(!safeToSync(game,update)){
+      setMessage('This game record is near the cloud sync size limit. Shorten existing notes or journal entries before saving.');
+      return;
+    }
     setBusy(true);setMessage('');
     try {
-      const ok=await onUpdate({playthroughs:original
-        ? runs.map(run=>run.id===original.id?next:run)
-        : [...runs,next]});
+      const ok=await onUpdate(update);
       if(ok){setShowRunEditor(false);setMessage(original?'Playthrough updated.':'Playthrough added.');}
       else setMessage('Could not save playthrough.');
     }catch {setMessage('Could not save playthrough.');}
@@ -132,9 +142,14 @@ export default function PlaythroughJournal({
       playthroughId:runs.some(r=>r.id===journalDraft.playthroughId)?journalDraft.playthroughId:'',
       createdAt:original?.createdAt??now,updatedAt:now
     };
+    const update:Partial<Game>={journal:original?entries.map(e=>e.id===original.id?updated:e):[...entries,updated]};
+    if(!safeToSync(game,update)){
+      setMessage('This game record is near the cloud sync size limit. Shorten the entry or older notes before saving.');
+      return;
+    }
     setBusy(true);setMessage('');
     try{
-      const ok=await onUpdate({journal:original?entries.map(e=>e.id===original.id?updated:e):[...entries,updated]});
+      const ok=await onUpdate(update);
       if(ok){setShowJournalEditor(false);setMessage(original?'Journal entry updated.':'Journal entry saved.');}
       else setMessage('Could not save journal entry.');
     }catch{setMessage('Could not save journal entry.');}

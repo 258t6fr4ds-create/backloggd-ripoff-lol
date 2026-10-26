@@ -17,6 +17,23 @@ export interface Release {
  */
 export const RELEASE_NOTES: Release[] = [
   {
+    version: '1.5.0',
+    date: '2026-10-26',
+    title: 'Every playthrough has a story.',
+    summary: 'Replay tracking and a personal gaming journal now live inside each game.',
+    changes: [
+      { type: 'Added', text: 'Separate playthrough records for every game, including run name, status, start/end dates, hours, and notes.' },
+      { type: 'Added', text: 'Editable journal entries for favourite moments, choices, reviews and progress, with optional links to specific playthroughs.' },
+      { type: 'Added', text: 'Per-game Playthroughs and Journal tabs with editing, deletion and filter-by-run controls.' },
+      { type: 'Improved', text: 'Game cards show recorded run counts, and Statistics now summarises runs, completed runs and journal entries.' },
+      { type: 'Improved', text: 'Playthrough and journal data is stored inside existing game records, so it follows current JSON backups and optional Supabase sync.' },
+      { type: 'Fixed', text: 'Deleting a run preserves journal entries by unlinking them instead of discarding personal notes.' },
+      { type: 'Improved', text: 'Existing game-level hours remain separate from playthrough hours, preventing accidental double-counting of old playtime in analytics.' },
+      { type: 'Improved', text: 'New history entries check a conservative cloud record size limit and never overwrite existing game notes, DLCs or ratings.' },
+    ],
+  },
+
+  {
     version: '1.4.2',
     date: '2026-10-26',
     title: 'Platform information, properly.',

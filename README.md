@@ -17,6 +17,15 @@ Every release must have complete notes in **both** the app's **What's New** pane
 
 The app always displays the current version and a **What's New** history, with an unread marker per browser until the latest entry is viewed. The notes remain available after the user's ChatGPT subscription ends.
 
+## v1.5.0 — Playthroughs and gaming journal
+
+- Open any game in your library → **Playthroughs & Journal**.
+- Log each replay separately with title, status, start/finish dates, hours and run-specific notes. This does not replace your existing total playtime or game notes.
+- The Journal tab stores written entries, optionally attached to a playthrough. It supports edit/delete and per-run filters.
+- Game cards display run counts. Statistics shows recorded runs, completed runs and journal entries, while game-level hours continue to count only manually entered legacy totals so replay hours are not double-counted.
+- All records stay inside the existing game object, so the established IndexedDB + optional Supabase + JSON backup flows preserve them. The editor also retains the new fields.
+- The UI checks game payload sizes below the Supabase sync limit before saving new history. No SQL, RAWG Worker or storage schema changes are needed.
+
 ## v1.4.2 — RAWG supported platforms
 
 - Games imported from RAWG (individually or in batches) retain the platforms RAWG lists for the game. Game cards show that catalogue availability when you haven't entered your own platform.

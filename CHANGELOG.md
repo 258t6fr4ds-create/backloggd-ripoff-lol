@@ -2,6 +2,24 @@
 
 All meaningful app updates receive dated, versioned patch notes. These match the in-app **What's New** panel. Entries list changes actually shipped, never planned features.
 
+## [1.5.0] — 2026-10-26
+**Every playthrough has a story.**
+
+### Added
+- Per-game **Playthroughs & Journal** panel in every game detail view, with separate tabs and mobile-friendly forms.
+- Up to 50 playthroughs per game, each with an independent title, status, started/finished dates, duration and private run notes.
+- Personal gaming journal with entries that can optionally be assigned to a specific playthrough, edited, filtered and removed.
+- Playthrough count on game cards and summary counts (runs, completed runs, journal entries) in Statistics.
+
+### Improved
+- Run and journal entries are embedded in their existing game records and are retained by the current JSON backup and Supabase cloud sync.
+- No fabricated historical playthroughs: existing saved hours, ratings and notes are left untouched.
+- Overall game-level playtime totals remain separate from new run-specific durations, avoiding accidental double-counting.
+- Deleting a run unlinks attached journal entries without deleting those entries.
+- New and edited run/journal entries are size-checked to stay below GameVault's per-record Supabase limit.
+
+**Data safety:** No IndexedDB migration, Cloudflare Worker redeploy or SQL changes. Existing platform, DLC, artwork, stats, library, cloud credentials and backups remain compatible.
+
 ## [1.4.2] — 2026-10-26
 **Platform information, properly.**
 
