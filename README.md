@@ -17,6 +17,13 @@ Every release must have complete notes in **both** the app's **What's New** pane
 
 The app always displays the current version and a **What's New** history, with an unread marker per browser until the latest entry is viewed. The notes remain available after the user's ChatGPT subscription ends.
 
+## v1.4.2 — RAWG supported platforms
+
+- Games imported from RAWG (individually or in batches) retain the platforms RAWG lists for the game. Game cards show that catalogue availability when you haven't entered your own platform.
+- **Your platform** is kept separate from **Available on (RAWG)**. No platform is guessed as your owned/played system.
+- For existing RAWG imports, go to **Library → Fill missing platforms**. The action looks up up to 25 games per click using the existing Worker, matches exact RAWG IDs, and changes only missing availability metadata. Run again for larger libraries. Some older obscure titles may not be found.
+- Metadata is saved within existing game records and retained in cloud sync and JSON backups. No new Worker deployment or database migration needed.
+
 ## v1.4.1 — Actual DLC relationships via RAWG
 
 - Open a saved game's detail panel → **Expansions & DLC → Browse RAWG**. This uses the dedicated RAWG `/games/{game_pk}/additions` route and groups expansions separately from editions/bundles and miscellaneous extras.

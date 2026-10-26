@@ -19,7 +19,7 @@ import { APP_VERSION } from './releaseNotes';
 import CatalogueSearch from './CatalogueSearch';
 import DlcPanel from './DlcPanel';
 import type { CatalogueGame } from './catalog';
-import { readRawgProxy, saveRawgProxy } from './catalog';
+import { readRawgProxy, saveRawgProxy, searchRawg } from './catalog';
 import PatchNotes from './PatchNotes';
 
 type Page = 'home' | 'library' | 'discover' | 'wishlist' | 'stats';
@@ -39,6 +39,14 @@ const dateLabel = (iso: string) => {
 };
 const fmtHours = (n: number) => new Intl.NumberFormat('en-AU', { maximumFractionDigits: 1 }).format(n);
 const currency = (n: number) => new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD', maximumFractionDigits: 2 }).format(n);
+// Platform recorded by the user is not the same thing as platform availability on RAWG.
+function platformSummary(game: Game): string {
+  if (game.platform.trim()) return game.platform;
+  const available = game.availablePlatforms?.split(', ').filter(Boolean) ?? [];
+  if (!available.length) return 'Platform not set';
+  const preview = available.slice(0,2).join(', ');
+  return 'Available: ' + preview + (available.length > 2 ? ' +' + (available.length-2) : '');
+}
 
 function Cover({ game, className = '' }: { game: Game; className?: string }) {
   const url = safeCover(game.coverUrl);
@@ -67,7 +75,7 @@ function GameCard({ game, onClick }: { game: Game; onClick: () => void }) {
         <Cover game={game}/>
         {game.favourite && <span className="poster-favourite" title="Favourite"><Heart size={15} fill="currentColor"/></span>}
       </div>
-      <div className="card-meta"><h3 title={game.title}>{game.title}</h3><p>{game.year || 'Year unknown'} <span>·</span> {game.platform || 'Platform unknown'}</p></div>
+      <div className="card-meta"><h3 title={game.title}>{game.title}</h3><p>{game.year || 'Year unknown'} <span>·</span> {platformSummary(game)}</p></div>
       <div className="card-bottom"><Pill tone={'status-' + game.status}>{statusLabel[game.status]}</Pill>{(game.dlcs?.length ?? 0) > 0 && <span className="rating-small">{game.dlcs!.length} DLC</span>}{game.rating !== null && <span className="rating-small"><Star size={13} fill="currentColor"/> {game.rating}/10</span>}</div>
     </button>
   );
@@ -79,7 +87,8 @@ function GameForm({ initial, onClose, onSave }: {
   initial: Game | null; onClose: () => void; onSave: (value: GameInput) => Promise<boolean>;
 }) {
   const [draft, setDraft] = useState<GameInput>(() => initial ? {
-    title: initial.title, year: initial.year, platform: initial.platform, genres: initial.genres,
+    title: initial.title, year: initial.year, platform: initial.platform,
+    availablePlatforms: initial.availablePlatforms ?? '', genres: initial.genres,
     coverUrl: initial.coverUrl, description: initial.description,
     catalogId: initial.catalogId, catalogUrl: initial.catalogUrl,
     catalogSource: initial.catalogSource, screenshots: initial.screenshots ?? [],
@@ -103,7 +112,7 @@ function GameForm({ initial, onClose, onSave }: {
         <form onSubmit={submit} className="editor-form">
           <div className="form-grid">
             <label className="field span-2">Game title <input required maxLength={160} placeholder="e.g. Kingdom Come: Deliverance" value={draft.title} onChange={e => set('title', e.target.value)}/></label>
-            <label className="field">Platform <input maxLength={60} placeholder="PS5, PC, Switch..." value={draft.platform} onChange={e => set('platform', e.target.value)}/></label>
+            <label className="field">Your platform <input maxLength={60} placeholder="PS5, PC, Switch…" value={draft.platform} onChange={e => set('platform', e.target.value)}/><span className="field-help">Where you personally play or own the game. RAWG availability is listed separately.</span></label>
             <label className="field">Release year <input type="number" min="1950" max="2200" placeholder="Optional" value={draft.year ?? ''} onChange={e => set('year', e.target.value ? Number(e.target.value) : null)}/></label>
             <label className="field">Status <select value={draft.status} onChange={e => { const status = e.target.value as GameStatus; setDraft(d => ({ ...d, status, ownership: status === 'wishlist' && d.ownership === 'digital' ? 'not-owned' : d.ownership })); }}>{STATUSES.map(s => <option value={s} key={s}>{statusLabel[s]}</option>)}</select></label>
             <label className="field">How you access it <select value={draft.ownership} onChange={e => set('ownership', e.target.value as Ownership)}>{OWNERSHIPS.map(s => <option value={s} key={s}>{ownershipLabel[s]}</option>)}</select></label>
@@ -141,6 +150,7 @@ export default function App() {
   const [showCloud, setShowCloud] = useState(false);
   const [workerAddress, setWorkerAddress] = useState(readRawgProxy);
   const [workerInput, setWorkerInput] = useState(readRawgProxy);
+  const [platformRefresh, setPlatformRefresh] = useState<{busy:boolean;done:number;total:number;updated:number;failed:number}>({busy:false,done:0,total:0,updated:0,failed:0});
   const [showPatchNotes, setShowPatchNotes] = useState(false);
   const [seenRelease, setSeenRelease] = useState(() => {
     try { return localStorage.getItem('gamevault:seenRelease') || ''; }
@@ -252,6 +262,7 @@ export default function App() {
       ...emptyGame,
       id: crypto.randomUUID(),
       title: entry.title.slice(0, 160), year: entry.year, platform: '',
+      availablePlatforms: entry.platform.slice(0,600),
       genres: entry.genres.slice(0, 240), coverUrl: entry.coverUrl,
       description: entry.description.slice(0, 5000),
       catalogId: entry.id, catalogUrl: entry.sourceUrl, catalogSource: entry.source,
@@ -262,7 +273,7 @@ export default function App() {
       await saveGame(game);
       await recordPending(game, game.id);
       setGames(old => [...old, game]);
-      setNotice('Imported ' + game.title + '. Edit it to set your platform and ownership.');
+      setNotice('Imported ' + game.title + '. RAWG-supported platforms are shown; set your own platform in Edit game.');
       return true;
     } catch (error) {
       setNotice('Could not import: ' + String(error));
@@ -306,7 +317,7 @@ export default function App() {
         const titleKey=entry.title.toLowerCase()+'|'+(entry.year??'');
         if(existing.has(entry.id)||existing.has(titleKey))continue;
         const game:Game={...emptyGame,id:crypto.randomUUID(),title:entry.title.slice(0,160),
-          year:entry.year,platform:'',genres:entry.genres.slice(0,240),
+          year:entry.year,platform:'',availablePlatforms:entry.platform.slice(0,600),genres:entry.genres.slice(0,240),
           coverUrl:safeCover(entry.coverUrl),description:entry.description.slice(0,5000),
           catalogId:entry.id,catalogUrl:safeCover(entry.sourceUrl),
           catalogSource:entry.source,screenshots:entry.screenshots.filter(safeCover).slice(0,40),
@@ -335,6 +346,46 @@ export default function App() {
       .filter(d=>action!=='remove'||d.id!==id)
       .map(d=>d.id===id&&action==='toggle'?{...d,owned:!d.owned}:d);
     await patchGame(parent,{dlcs});
+  }
+
+
+  // Explicit, safe backfill for old RAWG imports. Match by catalogue ID (never
+  // fuzzy title alone), only write new supported-platform metadata, and never
+  // replace a user's personally entered platform. Cap requests per click.
+  async function refreshMissingPlatforms() {
+    if(platformRefresh.busy)return;
+    if(!workerAddress){
+      setNotice('Connect your RAWG Worker in Settings first.');return;
+    }
+    const targets=games.filter(g=>/^rawg:\d+$/.test(g.catalogId??'')&&!g.availablePlatforms?.trim()).slice(0,25);
+    if(!targets.length){
+      setNotice('No RAWG games with missing supported-platform information found.');return;
+    }
+    setPlatformRefresh({busy:true,done:0,total:targets.length,updated:0,failed:0});
+    let updated=0,failed=0;
+    const successful:Game[]=[];
+    for(const original of targets) {
+      try {
+        // Worker /games?search= is already deployed on all connected devices.
+        const suggestions=await searchRawg(original.title,workerAddress,undefined,true,false);
+        const exact=suggestions.find(g=>g.id===original.catalogId);
+        const available=exact?.platform?.trim().slice(0,600);
+        if(available){
+          const changed:Game={...original,availablePlatforms:available};
+          await saveGame(changed);
+          await recordPending(changed,changed.id);
+          successful.push(changed);
+          updated++;
+        }else failed++;
+      }catch {failed++;}
+      setPlatformRefresh({busy:true,done:updated+failed,total:targets.length,updated,failed});
+    }
+    if(successful.length) {
+      const map=new Map(successful.map(g=>[g.id,g]));
+      setGames(old=>old.map(g=>map.get(g.id)??g));
+    }
+    setPlatformRefresh({busy:false,done:targets.length,total:targets.length,updated,failed});
+    setNotice('RAWG platform lookup: '+updated+' updated, '+failed+' not matched. Personal platform entries were not changed.');
   }
 
   function saveWorkerAddress() {
@@ -458,6 +509,15 @@ export default function App() {
                   <label className="select-wrap"><SlidersHorizontal size={16}/><select aria-label="Sort games" value={sort} onChange={e => setSort(e.target.value as Sort)}><option value="recent">Recently updated</option><option value="title">Title A–Z</option><option value="rating">Top rated</option><option value="hours">Most played</option><option value="year">Newest release</option></select><ChevronDown size={15}/></label>
                 </div>
                 <div className="results-line">{sortedLibrary.length} {sortedLibrary.length === 1 ? 'game' : 'games'} found</div>
+                {games.some(g=>/^rawg:\d+$/.test(g.catalogId??'')&&!g.availablePlatforms?.trim())&&
+                  <div className="platform-refresh-banner">
+                    <div><strong>Missing supported-platform information?</strong><p>Older RAWG imports didn't save platform availability. Refresh up to 25 per batch without changing your personal platform.</p>
+                      {platformRefresh.busy&&<small>Checked {platformRefresh.done} of {platformRefresh.total} · {platformRefresh.updated} updated</small>}
+                    </div>
+                    <button className="btn btn-subtle" disabled={platformRefresh.busy||!workerAddress} onClick={()=>void refreshMissingPlatforms()}>
+                      <RefreshCw size={16} className={platformRefresh.busy?'spin':''}/>{platformRefresh.busy?'Checking…':'Fill missing platforms'}
+                    </button>
+                  </div>}
                 {sortedLibrary.length ? renderCards(sortedLibrary) : games.length ? <Empty icon={<Search size={28}/>} title="No games match" description="Try changing the search or filters." action={<button className="btn btn-subtle" onClick={() => {setQuery('');setStatusFilter('all');}}>Clear filters</button>}/> : <Empty title="Your library starts here" description="Add your first game. Your collection will stay saved on this device." action={<button className="btn btn-primary" onClick={() => setShowCatalogue(true)}><Search size={17}/> Find first game</button>}/>}
               </>}
               {page === 'discover' && <>
@@ -503,7 +563,7 @@ export default function App() {
       {selected && <div className="modal-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) setSelectedId(null); }}>
         <section className="modal detail-modal" role="dialog" aria-modal="true" aria-label={'Details for ' + selected.title}>
           <header className="modal-heading"><button className="icon-text" onClick={() => setSelectedId(null)}><ArrowLeft size={18}/> Back to library</button><button className="icon-btn" onClick={() => setSelectedId(null)} aria-label="Close"><X size={20}/></button></header>
-          <div className="detail-main"><Cover game={selected} className="detail-cover"/><div className="detail-copy"><span className="eyebrow">{selected.platform}{selected.year ? ' / ' + selected.year : ''}</span><h2>{selected.title}</h2><div className="detail-pills"><Pill tone={'status-'+selected.status}>{statusLabel[selected.status]}</Pill><Pill>{ownershipLabel[selected.ownership]}</Pill>{selected.favourite && <Pill><Heart size={12} fill="currentColor"/> Favourite</Pill>}</div><p className="detail-genres">{selected.genres || 'No genres added yet'}</p><div className="detail-actions"><button className="btn btn-primary" onClick={() => { setEditing(selected); setSelectedId(null); }}><Pencil size={16}/> Edit game</button><button className="btn btn-subtle" onClick={() => patchGame(selected,{favourite: !selected.favourite})}><Heart size={16} fill={selected.favourite ? 'currentColor' : 'none'}/> {selected.favourite ? 'Unfavourite' : 'Favourite'}</button></div></div></div>
+          <div className="detail-main"><Cover game={selected} className="detail-cover"/><div className="detail-copy"><span className="eyebrow">{selected.platform ? 'YOUR PLATFORM: ' + selected.platform : 'PLATFORM NOT SET'}{selected.year ? ' / ' + selected.year : ''}</span><h2>{selected.title}</h2><div className="detail-pills"><Pill tone={'status-'+selected.status}>{statusLabel[selected.status]}</Pill><Pill>{ownershipLabel[selected.ownership]}</Pill>{selected.favourite && <Pill><Heart size={12} fill="currentColor"/> Favourite</Pill>}</div><p className="detail-genres">{selected.genres || 'No genres added yet'}</p>{selected.availablePlatforms && <p className="detail-available-platforms"><strong>Available on (RAWG):</strong> {selected.availablePlatforms}</p>}<div className="detail-actions"><button className="btn btn-primary" onClick={() => { setEditing(selected); setSelectedId(null); }}><Pencil size={16}/> Edit game</button><button className="btn btn-subtle" onClick={() => patchGame(selected,{favourite: !selected.favourite})}><Heart size={16} fill={selected.favourite ? 'currentColor' : 'none'}/> {selected.favourite ? 'Unfavourite' : 'Favourite'}</button></div></div></div>
           <div className="detail-stats"><div><strong>{selected.rating !== null ? selected.rating+'/10' : '—'}</strong><span>Your rating</span></div><div><strong>{fmtHours(selected.hours)}h</strong><span>Playtime logged</span></div><div><strong>{dateLabel(selected.completedAt)}</strong><span>Completed</span></div></div>
           {selected.status === 'wishlist' && selected.priceTarget !== null && <div className="note-box">Your target price: <strong>{currency(selected.priceTarget)}</strong> AUD tracking only — not a live quote.</div>}
           {selected.description && <div className="detail-description"><span className="eyebrow">ABOUT THE GAME</span><p>{selected.description}</p></div>}

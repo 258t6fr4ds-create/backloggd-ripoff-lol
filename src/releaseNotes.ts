@@ -17,6 +17,21 @@ export interface Release {
  */
 export const RELEASE_NOTES: Release[] = [
   {
+    version: '1.4.2',
+    date: '2026-10-26',
+    title: 'Platform information, properly.',
+    summary: 'Imported RAWG games now show their available platforms without guessing where you play them.',
+    changes: [
+      { type: 'Fixed', text: 'RAWG imports and bulk imports no longer throw away the platform availability supplied by the catalogue.' },
+      { type: 'Improved', text: 'Game cards display supported platforms when no personal platform was entered, instead of Platform unknown.' },
+      { type: 'Added', text: 'Game details distinguish Your platform from Available on (RAWG), so supported systems are never mistaken for owned systems.' },
+      { type: 'Added', text: 'Library action to fill missing RAWG platform metadata on older imported games, up to 25 per batch, with progress and exact RAWG-ID matching.' },
+      { type: 'Improved', text: 'Catalogue previews show the available systems and game editor clearly labels personal platform separately.' },
+      { type: 'Fixed', text: 'The metadata backfill preserves user-selected platforms, unrelated game data, Supabase compatibility and existing backups.' },
+    ],
+  },
+
+  {
     version: '1.4.1',
     date: '2026-10-26',
     title: 'DLC that actually belongs to the game.',

@@ -88,7 +88,7 @@ type RawgGame = {
 };
 function mapRawgGame(game: RawgGame): CatalogueGame {
   const year = game.released && /^\d{4}/.test(game.released) ? Number(game.released.slice(0, 4)) : null;
-  const platform = game.platforms?.map(p => p.platform?.name).filter(Boolean).slice(0, 5).join(', ') ?? '';
+  const platform = [...new Set(game.platforms?.map(p => p.platform?.name?.trim()).filter((v): v is string => Boolean(v)) ?? [])].join(', ').slice(0,600);
   return {
     id: 'rawg:' + String(game.id),
     title: game.name ?? 'Untitled',

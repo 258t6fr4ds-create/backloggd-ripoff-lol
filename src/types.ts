@@ -19,7 +19,8 @@ export interface Game {
   id: string;
   title: string;
   year: number | null;
-  platform: string;
+  platform: string; // user-owned/played platform, never inferred from RAWG
+  availablePlatforms?: string; // supported platform names listed by RAWG
   genres: string;
   coverUrl: string;
   description?: string;
@@ -77,6 +78,7 @@ export function normalizeGame(raw: unknown): Game | null {
     title: text('title').trim().slice(0, 160),
     year: numberOrNull(g.year, 2200),
     platform: text('platform', 'PS5').slice(0, 60),
+    availablePlatforms: text('availablePlatforms').slice(0, 600),
     genres: text('genres').slice(0, 240),
     coverUrl: text('coverUrl').slice(0, 2048),
     description: text('description').slice(0, 5000),

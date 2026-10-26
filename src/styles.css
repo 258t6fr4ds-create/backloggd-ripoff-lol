@@ -729,3 +729,19 @@ h1,h2,h3{font-family:Manrope,'DM Sans',sans-serif}
  .related-dlc-batchbar .btn{padding:8px}
  .detail-dlc-compact{padding:12px}
 }
+
+
+/* v1.4.2: supported platforms from RAWG are distinct from the platform you own. */
+.detail-available-platforms,.catalogue-platforms{color:#a8b7c5;font-size:11px;line-height:1.6;margin-top:10px;overflow-wrap:anywhere}
+.detail-available-platforms strong,.catalogue-platforms strong{color:#dae5ee}
+.platform-refresh-banner{display:flex;align-items:center;justify-content:space-between;gap:15px;background:#1e2934;border:1px solid #405467;border-radius:12px;padding:15px 17px;margin:5px 0 18px}
+.platform-refresh-banner>div{min-width:0}
+.platform-refresh-banner strong{font-size:12px;color:#e2edf5}
+.platform-refresh-banner p{color:#aabccb;font-size:11px;line-height:1.5;margin-top:6px}
+.platform-refresh-banner small{display:block;color:#c5dae9;font-size:10px;margin-top:6px}
+.platform-refresh-banner .btn{flex:0 0 auto}
+@media(max-width:650px){
+ .platform-refresh-banner{flex-direction:column;align-items:stretch;padding:13px}
+ .platform-refresh-banner .btn{width:100%;min-height:44px}
+ .detail-available-platforms,.catalogue-platforms{font-size:12px}
+}

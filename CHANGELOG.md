@@ -2,6 +2,24 @@
 
 All meaningful app updates receive dated, versioned patch notes. These match the in-app **What's New** panel. Entries list changes actually shipped, never planned features.
 
+## [1.4.2] — 2026-10-26
+**Platform information, properly.**
+
+### Fixed
+- RAWG single and bulk game imports now retain `platforms` returned by the RAWG search API rather than saving empty platform information.
+- Game cards no longer display “Platform unknown” for imported games whose catalogue-supported platforms are available.
+
+### Added
+- Separate `availablePlatforms` metadata to distinguish **RAWG availability** from the **user's actual platform**. Never claim the user owns a game on every available system.
+- Library action **Fill missing platforms** to backfill older RAWG games, up to 25 per run. The existing Worker searches titles, matches results by exact RAWG game ID, and updates only previously missing supported-platform metadata.
+- Progress counter, failure summary and additional platform display in catalogue and game details.
+
+### Data safety
+- No change to IndexedDB schema version, Supabase tables, saved cloud settings or JSON backup format.
+- Existing manually selected platforms are never overwritten.
+- Availability metadata is optional and travels inside existing game records; no Cloudflare Worker redeploy needed.
+- Backfill may miss obscure titles absent from RAWG's first-page search results; those are left unchanged.
+
 ## [1.4.1] — 2026-10-26
 **DLC that actually belongs to the game.**
 

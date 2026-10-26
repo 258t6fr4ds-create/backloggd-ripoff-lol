@@ -275,7 +275,7 @@ export default function CatalogueSearch({
           <button className="icon-text" onClick={() => setSelected(null)}><ArrowRight size={15} style={{transform:'rotate(180deg)'}}/> Back to suggestions</button>
           <div className="catalogue-preview-main">
             <div className="catalogue-large-cover">{safeCover(selected.coverUrl) ? <img src={selected.coverUrl} alt={'Artwork for ' + selected.title}/> : <Gamepad2 size={42}/>}</div>
-            <div><span className="eyebrow">{selected.source.toUpperCase()}</span><h3>{selected.title}</h3><p className="catalogue-meta">{selected.year ?? 'Release year unknown'}{selected.genres ? ' · ' + selected.genres : ''}</p>
+            <div><span className="eyebrow">{selected.source.toUpperCase()}</span><h3>{selected.title}</h3><p className="catalogue-meta">{selected.year ?? 'Release year unknown'}{selected.genres ? ' · ' + selected.genres : ''}</p>{selected.platform&&<p className="catalogue-platforms"><strong>Available on:</strong> {selected.platform}</p>}
               {selected.description && <p className="catalogue-description">{selected.description.slice(0, 500)}</p>}
               <a href={selected.sourceUrl} target="_blank" rel="noopener noreferrer" className="catalogue-attribution">Source: {selected.source === 'rawg' ? 'RAWG' : 'Wikipedia'} <ExternalLink size={13}/></a>
             </div>
