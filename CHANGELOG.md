@@ -2,6 +2,17 @@
 
 All meaningful app updates receive dated, versioned patch notes. These match the in-app **What's New** panel. Entries list changes actually shipped, never planned features.
 
+## [1.7.1] — 2026-10-27
+**Cleaner DLC and playthrough details.**
+
+- DLC and expansions now come before the Playthroughs & Journal section in game profiles.
+- Removed the oversized "Your first playthrough starts here" empty-state card, which made unrelated DLC workflows feel repetitive.
+- Games with no saved runs or journal entries show a compact collapsed history section by default. Existing recorded playthroughs and journals continue to open expanded.
+- Open history and Collapse controls remain accessible on narrow mobile displays.
+- Expanded empty history uses a short one-line note instead of a large placeholder.
+- Updated offline cache version so installed Home Screen apps receive this layout patch.
+- No changes to saved games, DLCs, playthroughs, cloud sync or backup formats.
+
 ## [1.7.0] — 2026-10-26
 **The visual overhaul.**
 

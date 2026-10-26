@@ -17,6 +17,20 @@ export interface Release {
  */
 export const RELEASE_NOTES: Release[] = [
   {
+    version: '1.7.1',
+    date: '2026-10-27',
+    title: 'Cleaner DLC and playthrough details.',
+    summary: 'DLC appears before playthrough history, and unused history no longer floods the screen with empty-state cards.',
+    changes: [
+      { type: 'Fixed', text: 'Removed the large Your first playthrough starts here placeholder from empty game histories.' },
+      { type: 'Improved', text: 'Playthroughs and journal are initially collapsed when no runs or entries exist, with a clear Open history control.' },
+      { type: 'Improved', text: 'DLC and expansions now appear ahead of the playthrough section in game details, making add-on browsing easier.' },
+      { type: 'Improved', text: 'Expanded history uses a small plain-text empty state instead of a large repetitive card.' },
+      { type: 'Fixed', text: 'New mobile styling keeps the compact history controls reachable without obscuring DLC entries.' },
+    ],
+  },
+
+  {
     version: '1.7.0',
     date: '2026-10-26',
     title: 'The visual overhaul.',

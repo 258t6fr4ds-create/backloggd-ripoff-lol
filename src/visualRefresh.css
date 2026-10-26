@@ -291,3 +291,34 @@ body{background:radial-gradient(ellipse 90% 80% at 80% -18%,rgba(79,119,147,.14)
  .game-card,.poster .cover img{transition:none!important}
  .game-card:hover,.game-card:hover .poster .cover img{transform:none!important}
 }
+
+
+/* v1.7.1: DLC first; unused playthrough history stays compact.
+   Remove giant empty placeholders that previously dominated game details. */
+.run-journal-panel{padding-block:18px;background:#15212d}
+.run-journal-heading{gap:12px}
+.run-journal-heading h3{font-size:17px;line-height:1.4}
+.run-journal-heading-actions{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:9px}
+.run-journal-summary{gap:5px}
+.run-journal-summary span{padding:6px 8px}
+.run-journal-toggle{
+  display:inline-flex;gap:6px;align-items:center;justify-content:center;min-height:42px;
+  padding:0 12px;border:1px solid #4c6579;border-radius:9px;
+  background:#273b4a;color:#d8e9f3;font-size:11px;font-weight:800;white-space:nowrap;
+}
+.run-journal-toggle svg{transition:transform .18s}
+.run-journal-toggle-open{transform:rotate(180deg)}
+.run-journal-content{padding-top:8px;min-width:0}
+.run-journal-quiet{
+  margin:10px 0 14px;padding:11px 12px;background:#202d39;border-radius:8px;
+  color:#a9bac8;font-size:11px;line-height:1.65
+}
+@media(max-width:650px){
+  .run-journal-panel{padding:15px 16px}
+  .run-journal-heading h3{font-size:15px}
+  .run-journal-heading-actions{width:100%;justify-content:space-between}
+  .run-journal-toggle{min-height:44px}
+}
+@media(prefers-reduced-motion:reduce){
+ .run-journal-toggle svg{transition:none}
+}

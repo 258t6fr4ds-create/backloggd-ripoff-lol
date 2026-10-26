@@ -45,6 +45,9 @@ export default function PlaythroughJournal({
 }) {
   const runs=game.playthroughs??[];
   const entries=game.journal??[];
+  // History is a compact disclosure until it contains actual user data.
+  // This keeps empty playthrough placeholders away from DLC workflows.
+  const [expanded,setExpanded]=useState(() => runs.length>0 || entries.length>0);
   const [section,setSection]=useState<'runs'|'journal'>('runs');
   const [editRunId,setEditRunId]=useState<string|null>(null);
   const [showRunEditor,setShowRunEditor]=useState(false);
@@ -168,8 +171,17 @@ export default function PlaythroughJournal({
   return <section className="run-journal-panel" aria-label={'Playthroughs and journal for '+game.title}>
     <div className="run-journal-heading">
       <div><span className="eyebrow">YOUR PLAY HISTORY</span><h3>Playthroughs & journal</h3></div>
-      <div className="run-journal-summary"><span>{runs.length} runs</span><span>{entries.length} entries</span></div>
+      <div className="run-journal-heading-actions">
+        <div className="run-journal-summary"><span>{runs.length} runs</span><span>{entries.length} entries</span></div>
+        <button className="run-journal-toggle" type="button"
+          aria-expanded={expanded} aria-controls={'run-journal-content-'+game.id}
+          onClick={()=>setExpanded(value=>!value)}>
+          {expanded?'Collapse':'Open history'}
+          <ChevronDown size={16} className={expanded?'run-journal-toggle-open':''}/>
+        </button>
+      </div>
     </div>
+    {expanded&&<div id={'run-journal-content-'+game.id} className="run-journal-content">
     <div className="run-journal-tabs" role="tablist" aria-label="Game history">
       <button role="tab" aria-selected={section==='runs'} className={section==='runs'?'active':''} onClick={()=>{setSection('runs');setShowJournalEditor(false);}}>
         <Clock3 size={17}/> Playthroughs <span>{runs.length}</span>
@@ -198,7 +210,7 @@ export default function PlaythroughJournal({
         </div>
         <div className="run-editor-actions"><button className="btn btn-ghost" type="button" onClick={()=>setShowRunEditor(false)}>Cancel</button><button className="btn btn-primary" type="submit" disabled={busy}><Save size={16}/>{busy?'Saving…':'Save run'}</button></div>
       </form>}
-      {!runs.length&&!showRunEditor&&<div className="run-journal-empty"><CalendarDays size={23}/><strong>Your first playthrough starts here.</strong><p>Log one now. Your existing game rating, notes and hours are untouched.</p></div>}
+      {!runs.length&&!showRunEditor&&<p className="run-journal-quiet">No playthroughs recorded yet. Use New run when you're ready.</p>}
       <div className="run-list">{sortedRuns.map((run,i)=><article key={run.id} className="run-card">
         <div className="run-card-top"><div><span className="run-index">RUN {runs.length-i}</span><h4>{run.title}</h4></div><span className={'run-status run-status-'+run.status}>{runNames[run.status]}</span></div>
         <div className="run-card-data"><span><CalendarDays size={14}/> {fmtDate(run.startDate)}{run.endDate?' → '+fmtDate(run.endDate):''}</span><span><Clock3 size={14}/> {run.hours.toLocaleString('en-AU',{maximumFractionDigits:1})}h</span></div>
@@ -226,12 +238,13 @@ export default function PlaythroughJournal({
         </div>
         <div className="run-editor-actions"><button className="btn btn-ghost" type="button" onClick={()=>setShowJournalEditor(false)}>Cancel</button><button className="btn btn-primary" type="submit" disabled={busy}><Check size={16}/>{busy?'Saving…':'Save entry'}</button></div>
       </form>}
-      {!sortedEntries.length&&!showJournalEditor&&<div className="run-journal-empty"><BookOpen size={23}/><strong>{journalFilter?'No notes for this run yet.':'Your gaming journal is empty.'}</strong><p>Nothing is generated for you. Every entry is written and saved by you.</p></div>}
+      {!sortedEntries.length&&!showJournalEditor&&<p className="run-journal-quiet">{journalFilter?'No notes for this run yet.':'No journal entries yet. Use Write entry to start.'}</p>}
       <div className="journal-list">{sortedEntries.map(entry=><article key={entry.id} className="journal-card">
         <div className="journal-card-heading"><div><span className="run-index">{new Date(entry.createdAt).toLocaleDateString('en-AU')}</span><h4>{entry.title||'Untitled entry'}</h4></div><div className="journal-card-actions"><button onClick={()=>openJournalEditor(entry)} disabled={busy} aria-label="Edit journal entry"><Pencil size={16}/></button><button onClick={()=>void deleteJournal(entry)} disabled={busy} aria-label="Delete journal entry"><Trash2 size={16}/></button></div></div>
         {entry.playthroughId&&<span className="journal-related">{runs.find(r=>r.id===entry.playthroughId)?.title||'Past playthrough'}</span>}
         <p className="journal-body">{entry.body}</p>
       </article>)}</div>
+    </div>}
     </div>}
   </section>;
 }

@@ -709,13 +709,13 @@ export default function App() {
           {selected.description && <div className="detail-description"><span className="eyebrow">ABOUT THE GAME</span><p>{selected.description}</p></div>}
           {(selected.screenshots ?? []).filter(safeCover).length > 0 && <div className="detail-gallery"><div className="detail-gallery-title"><span className="eyebrow">REAL SCREENSHOTS</span><span>{selected.screenshots?.length ?? 0} images</span></div><div className="detail-gallery-strip">{(selected.screenshots ?? []).filter(safeCover).map((url,i) => <a key={url+'-'+i} href={url} target="_blank" rel="noopener noreferrer"><img loading="lazy" src={url} alt={selected.title + ' screenshot ' + (i+1)}/></a>)}</div><small>External image links. Open an image to see it full size.</small></div>}
           {selected.catalogUrl && safeCover(selected.catalogUrl) && <div className="detail-catalog-source">Game information and artwork: <a href={selected.catalogUrl} target="_blank" rel="noopener noreferrer">{selected.catalogSource === 'rawg' ? 'RAWG' : 'Wikipedia'} ↗</a></div>}
-          <PlaythroughJournal key={selected.id} game={selected}
-            onUpdate={change => patchGame(selected,change)}
-          />
           <DlcPanel key={selected.id} game={selected} proxy={workerAddress}
             onFindManually={() => startDlcSearch(selected)}
             onAttach={entries => importManyCatalogue(entries,'backlog',selected.id)}
             onModify={(id,action) => updateDlc(selected,id,action)}
+          />
+          <PlaythroughJournal key={selected.id} game={selected}
+            onUpdate={change => patchGame(selected,change)}
           />
           <div className="detail-notes"><span className="eyebrow">YOUR NOTES</span><p>{selected.notes || 'No notes yet. Edit this game to add your thoughts or progress.'}</p></div>
           <footer className="detail-footer"><small>Added {dateLabel(selected.addedAt)} · Updated {dateLabel(selected.updatedAt)}</small><button className="danger-link" onClick={() => deleteGame(selected)}><Trash2 size={16}/> Remove game</button></footer>

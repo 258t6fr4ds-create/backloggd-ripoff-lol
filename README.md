@@ -17,6 +17,13 @@ Every release must have complete notes in **both** the app's **What's New** pane
 
 The app always displays the current version and a **What's New** history, with an unread marker per browser until the latest entry is viewed. The notes remain available after the user's ChatGPT subscription ends.
 
+## v1.7.1 — Compact playthrough section in DLC profiles
+
+- DLC and expansions now appear before playthroughs in game details.
+- Empty playthrough history is collapsed, rather than showing a large repeated-looking card. Expand **Open history** whenever you want to log a first run or journal entry.
+- Saved playthroughs and journals remain visible by default, with a Collapse action when you prefer a compact view.
+- The installed Home Screen app's offline cache is refreshed automatically. No migration or setup required.
+
 ## v1.7.0 — Cinematic visual refresh and custom shelves
 
 - Refined slate/graphite theme, wide game-art cards, cinematic details, home spotlight, improved typography, accessible contrast, mobile-safe spacing and reduced-motion support.
