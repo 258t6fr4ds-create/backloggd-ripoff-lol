@@ -14,7 +14,7 @@ import {
   emptyGame, normalizeGame, ownershipLabel, OWNERSHIPS,
   safeCover, statusLabel, STATUSES
 } from './types';
-import type { Game, GameInput, GameStatus, Ownership } from './types';
+import type { Game, GameDlc, GameInput, GameStatus, Ownership } from './types';
 import { APP_VERSION } from './releaseNotes';
 import CatalogueSearch from './CatalogueSearch';
 import type { CatalogueGame } from './catalog';
@@ -67,7 +67,7 @@ function GameCard({ game, onClick }: { game: Game; onClick: () => void }) {
         {game.favourite && <span className="poster-favourite" title="Favourite"><Heart size={15} fill="currentColor"/></span>}
       </div>
       <div className="card-meta"><h3 title={game.title}>{game.title}</h3><p>{game.year || 'Year unknown'} <span>·</span> {game.platform || 'Platform unknown'}</p></div>
-      <div className="card-bottom"><Pill tone={'status-' + game.status}>{statusLabel[game.status]}</Pill>{game.rating !== null && <span className="rating-small"><Star size={13} fill="currentColor"/> {game.rating}/10</span>}</div>
+      <div className="card-bottom"><Pill tone={'status-' + game.status}>{statusLabel[game.status]}</Pill>{(game.dlcs?.length ?? 0) > 0 && <span className="rating-small">{game.dlcs!.length} DLC</span>}{game.rating !== null && <span className="rating-small"><Star size={13} fill="currentColor"/> {game.rating}/10</span>}</div>
     </button>
   );
 }
@@ -84,7 +84,7 @@ function GameForm({ initial, onClose, onSave }: {
     catalogSource: initial.catalogSource, screenshots: initial.screenshots ?? [],
     status: initial.status, ownership: initial.ownership,
     rating: initial.rating, hours: initial.hours, notes: initial.notes,
-    completedAt: initial.completedAt, priceTarget: initial.priceTarget, favourite: initial.favourite,
+    completedAt: initial.completedAt, priceTarget: initial.priceTarget, favourite: initial.favourite, dlcs: initial.dlcs ?? [],
   } : { ...emptyGame });
   const [working, setWorking] = useState(false);
   const set = <K extends keyof GameInput>(key: K, value: GameInput[K]) => setDraft(d => ({ ...d, [key]: value }));
@@ -136,6 +136,7 @@ export default function App() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showCatalogue, setShowCatalogue] = useState(false);
+  const [dlcParentId, setDlcParentId] = useState<string | null>(null);
   const [showCloud, setShowCloud] = useState(false);
   const [workerAddress, setWorkerAddress] = useState(readRawgProxy);
   const [workerInput, setWorkerInput] = useState(readRawgProxy);
@@ -267,6 +268,73 @@ export default function App() {
       return false;
     }
   }
+
+  /** Games are added in one local DB transaction. DLCs are nested in their
+   * parent, and only that parent is queued for cloud sync. */
+  async function importManyCatalogue(entries: CatalogueGame[], status: GameStatus, parentId?: string): Promise<{added:number;skipped:number}> {
+    if (!entries.length) return {added:0,skipped:0};
+    const uniqueEntries=[...new Map(entries.map(item=>[item.id,item])).values()].slice(0,80);
+    const now=new Date().toISOString();
+    try {
+      if(parentId){
+        const parent=games.find(g=>g.id===parentId);
+        if(!parent)throw Error('Parent game was not found in your library.');
+        const original=parent.dlcs??[];
+        const existing=new Set(original.flatMap(d=>[d.catalogId,d.title.toLowerCase()].filter(Boolean)));
+        const additions:GameDlc[]=[];
+        for(const entry of uniqueEntries){
+          if(existing.has(entry.id)||existing.has(entry.title.toLowerCase())||original.length+additions.length>=80)continue;
+          additions.push({id:crypto.randomUUID(),title:entry.title.slice(0,160),
+            year:entry.year,coverUrl:safeCover(entry.coverUrl),catalogId:entry.id,
+            catalogUrl:safeCover(entry.sourceUrl),owned:false,addedAt:now});
+          existing.add(entry.id);existing.add(entry.title.toLowerCase());
+        }
+        if(additions.length){
+          const changed:Game={...parent,dlcs:[...original,...additions],updatedAt:now};
+          await saveGame(changed);
+          await recordPending(changed,changed.id);
+          setGames(items=>items.map(g=>g.id===changed.id?changed:g));
+          setNotice('Added '+additions.length+' DLC/expansion'+(additions.length===1?'':'s')+' under '+parent.title+'.');
+        }else setNotice('Those DLCs are already linked, or the parent reached its 80-DLC limit.');
+        return {added:additions.length,skipped:uniqueEntries.length-additions.length};
+      }
+      const existing=new Set(games.flatMap(g=>[g.catalogId||'',g.title.toLowerCase()+'|'+(g.year??'')]));
+      const additions:Game[]=[];
+      for(const entry of uniqueEntries){
+        const titleKey=entry.title.toLowerCase()+'|'+(entry.year??'');
+        if(existing.has(entry.id)||existing.has(titleKey))continue;
+        const game:Game={...emptyGame,id:crypto.randomUUID(),title:entry.title.slice(0,160),
+          year:entry.year,platform:'',genres:entry.genres.slice(0,240),
+          coverUrl:safeCover(entry.coverUrl),description:entry.description.slice(0,5000),
+          catalogId:entry.id,catalogUrl:safeCover(entry.sourceUrl),
+          catalogSource:entry.source,screenshots:entry.screenshots.filter(safeCover).slice(0,40),
+          status,ownership:'not-owned',addedAt:now,updatedAt:now,dlcs:[]};
+        additions.push(game);existing.add(entry.id);existing.add(titleKey);
+      }
+      if(additions.length){
+        await mergeGames(additions);
+        for(const game of additions)await recordPending(game,game.id);
+        setGames(items=>[...items,...additions]);
+        setNotice('Added '+additions.length+' game'+(additions.length===1?'':'s')+' to '+(status==='wishlist'?'wishlist':'your library')+'.');
+      }else setNotice('All selected games are already in your library.');
+      return {added:additions.length,skipped:uniqueEntries.length-additions.length};
+    }catch(error){
+      setNotice('Import failed: '+String(error));
+      throw error;
+    }
+  }
+  function startDlcSearch(parent:Game){
+    setSelectedId(null);
+    setDlcParentId(parent.id);
+    setShowCatalogue(true);
+  }
+  async function updateDlc(parent:Game,id:string,action:'toggle'|'remove'){
+    const dlcs=(parent.dlcs??[])
+      .filter(d=>action!=='remove'||d.id!==id)
+      .map(d=>d.id===id&&action==='toggle'?{...d,owned:!d.owned}:d);
+    await patchGame(parent,{dlcs});
+  }
+
   function saveWorkerAddress() {
     try {
       const saved = saveRawgProxy(workerInput);
@@ -439,13 +507,34 @@ export default function App() {
           {selected.description && <div className="detail-description"><span className="eyebrow">ABOUT THE GAME</span><p>{selected.description}</p></div>}
           {(selected.screenshots ?? []).filter(safeCover).length > 0 && <div className="detail-gallery"><div className="detail-gallery-title"><span className="eyebrow">REAL SCREENSHOTS</span><span>{selected.screenshots?.length ?? 0} images</span></div><div className="detail-gallery-strip">{(selected.screenshots ?? []).filter(safeCover).map((url,i) => <a key={url+'-'+i} href={url} target="_blank" rel="noopener noreferrer"><img loading="lazy" src={url} alt={selected.title + ' screenshot ' + (i+1)}/></a>)}</div><small>External image links. Open an image to see it full size.</small></div>}
           {selected.catalogUrl && safeCover(selected.catalogUrl) && <div className="detail-catalog-source">Game information and artwork: <a href={selected.catalogUrl} target="_blank" rel="noopener noreferrer">{selected.catalogSource === 'rawg' ? 'RAWG' : 'Wikipedia'} ↗</a></div>}
+          <section className="detail-dlc">
+            <div className="detail-dlc-head">
+              <div><span className="eyebrow">EXPANSIONS & ADD-ONS</span><h3>DLC <span className="heading-count">{selected.dlcs?.length ?? 0}</span></h3></div>
+              <button className="btn btn-subtle" onClick={() => startDlcSearch(selected)}><Plus size={16}/> Find DLC</button>
+            </div>
+            {(selected.dlcs?.length ?? 0) === 0
+              ? <p className="detail-dlc-empty">No DLC linked yet. Find DLC to attach expansions to this game, not your main library.</p>
+              : <div className="detail-dlc-list">{selected.dlcs?.map(d=><div className="detail-dlc-row" key={d.id}>
+                <div className="detail-dlc-image">{safeCover(d.coverUrl)?<img src={d.coverUrl} alt="" loading="lazy"/>:<Gamepad2 size={21}/>}</div>
+                <div className="detail-dlc-title"><strong>{d.title}</strong><small>{d.year??'Year unknown'} · {d.owned?'Owned':'Not marked owned'}</small>{safeCover(d.catalogUrl)&&<a href={d.catalogUrl} target="_blank" rel="noopener noreferrer">Source ↗</a>}</div>
+                <button className="btn btn-subtle" onClick={()=>void updateDlc(selected,d.id,'toggle')}>{d.owned?'Owned':'Mark owned'}</button>
+                <button className="icon-btn" aria-label={'Remove DLC '+d.title} onClick={()=>{if(window.confirm('Remove this DLC from '+selected.title+'?'))void updateDlc(selected,d.id,'remove');}}><X size={18}/></button>
+              </div>)}</div>}
+          </section>
           <div className="detail-notes"><span className="eyebrow">YOUR NOTES</span><p>{selected.notes || 'No notes yet. Edit this game to add your thoughts or progress.'}</p></div>
           <footer className="detail-footer"><small>Added {dateLabel(selected.addedAt)} · Updated {dateLabel(selected.updatedAt)}</small><button className="danger-link" onClick={() => deleteGame(selected)}><Trash2 size={16}/> Remove game</button></footer>
         </section>
       </div>}
       {editing && <GameForm key={editing === 'new' ? 'new' : editing.id} initial={editing === 'new' ? null : editing} onClose={() => setEditing(null)} onSave={persist}/>}
       <CloudPanel visible={showCloud} onClose={() => setShowCloud(false)} onRemote={games=>setGames(games)} onNotify={message=>setNotice(message)}/>
-      {showCatalogue && <CatalogueSearch onClose={() => setShowCatalogue(false)} onImport={importCatalogue} onOpenSettings={() => {setShowCatalogue(false);setShowSettings(true);}}/>}
+      {showCatalogue && <CatalogueSearch
+        onClose={() => {setShowCatalogue(false);setDlcParentId(null);}}
+        onImport={importCatalogue}
+        onImportMany={importManyCatalogue}
+        library={games}
+        initialParentId={dlcParentId}
+        onOpenSettings={() => {setShowCatalogue(false);setDlcParentId(null);setShowSettings(true);}}
+      />}
       {showPatchNotes && <PatchNotes onClose={() => setShowPatchNotes(false)}/>}
       {showSettings && <div className="modal-backdrop" onMouseDown={e => { if(e.target === e.currentTarget) setShowSettings(false); }}>
         <section className="modal settings-modal" role="dialog" aria-modal="true" aria-label="Settings and backups"><header className="modal-heading"><div><span className="eyebrow">PREFERENCES</span><h2>Settings & backups</h2></div><button className="icon-btn" onClick={() => setShowSettings(false)} aria-label="Close"><X size={20}/></button></header>
