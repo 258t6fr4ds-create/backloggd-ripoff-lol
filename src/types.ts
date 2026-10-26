@@ -15,6 +15,28 @@ export interface GameDlc {
   addedAt: string;
 }
 
+export type PlaythroughStatus = 'in-progress' | 'completed' | 'paused' | 'abandoned';
+
+export interface GamePlaythrough {
+  id: string;
+  title: string;
+  status: PlaythroughStatus;
+  startDate: string;
+  endDate: string;
+  hours: number;
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+}
+export interface GameJournalEntry {
+  id: string;
+  title: string;
+  body: string;
+  playthroughId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Game {
   id: string;
   title: string;
@@ -29,6 +51,8 @@ export interface Game {
   catalogUrl?: string;
   catalogSource?: 'rawg' | 'wikipedia';
   dlcs?: GameDlc[];
+  playthroughs?: GamePlaythrough[];
+  journal?: GameJournalEntry[];
   status: GameStatus;
   ownership: Ownership;
   rating: number | null;
@@ -62,6 +86,7 @@ export const ownershipLabel: Record<Ownership, string> = {
 export const emptyGame: GameInput = {
   title: '', year: null, platform: 'PS5', genres: '', coverUrl: '',
   status: 'backlog', ownership: 'digital', rating: null, hours: 0, dlcs: [],
+  playthroughs: [], journal: [],
   notes: '', completedAt: '', priceTarget: null, favourite: false,
 };
 
@@ -73,6 +98,33 @@ export function normalizeGame(raw: unknown): Game | null {
   const numberOrNull = (value: unknown, max: number) =>
     typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= max ? value : null;
   const now = new Date().toISOString();
+  const safeDate = (value: unknown): string => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : '';
+  const safeIso = (value: unknown): string => typeof value === 'string' && !Number.isNaN(Date.parse(value)) ? value.slice(0,40) : now;
+  const safeId = (value: unknown): string => typeof value === 'string' && value.length > 0 && value.length <= 130 ? value : crypto.randomUUID();
+  const normalizeRun = (value: unknown): GamePlaythrough | null => {
+    if (!value || typeof value !== 'object') return null;
+    const run = value as Record<string,unknown>;
+    if (typeof run.title !== 'string' || !run.title.trim()) return null;
+    const status: PlaythroughStatus[] = ['in-progress','completed','paused','abandoned'];
+    return {
+      id:safeId(run.id),title:run.title.trim().slice(0,100),
+      status:status.includes(run.status as PlaythroughStatus) ? run.status as PlaythroughStatus : 'in-progress',
+      startDate:safeDate(run.startDate),endDate:safeDate(run.endDate),
+      hours:numberOrNull(run.hours,1000000)??0,notes:typeof run.notes==='string'?run.notes.slice(0,4000):'',
+      createdAt:safeIso(run.createdAt),updatedAt:safeIso(run.updatedAt),
+    };
+  };
+  const normalizeEntry = (value: unknown): GameJournalEntry | null => {
+    if (!value || typeof value !== 'object') return null;
+    const entry=value as Record<string,unknown>;
+    if (typeof entry.body !== 'string' || !entry.body.trim()) return null;
+    return {
+      id:safeId(entry.id),title:typeof entry.title==='string'?entry.title.trim().slice(0,100):'',
+      body:entry.body.trim().slice(0,6000),
+      playthroughId:typeof entry.playthroughId==='string'?entry.playthroughId.slice(0,130):'',
+      createdAt:safeIso(entry.createdAt),updatedAt:safeIso(entry.updatedAt)
+    };
+  };
   return {
     id: text('id') || crypto.randomUUID(),
     title: text('title').trim().slice(0, 160),
@@ -101,6 +153,10 @@ export function normalizeGame(raw: unknown): Game | null {
         addedAt: typeof d.addedAt === 'string' ? d.addedAt.slice(0,40) : now,
       } satisfies GameDlc];
     }) : [],
+    playthroughs:Array.isArray(g.playthroughs) ? g.playthroughs.slice(0,50)
+      .map(normalizeRun).filter((v):v is GamePlaythrough=>v!==null) : [],
+    journal:Array.isArray(g.journal) ? g.journal.slice(0,200)
+      .map(normalizeEntry).filter((v):v is GameJournalEntry=>v!==null) : [],
     status: STATUSES.includes(g.status as GameStatus) ? g.status as GameStatus : 'backlog',
     ownership: OWNERSHIPS.includes(g.ownership as Ownership) ? g.ownership as Ownership : 'not-owned',
     rating: numberOrNull(g.rating, 10),

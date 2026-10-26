@@ -21,6 +21,7 @@ import DlcPanel from './DlcPanel';
 import type { CatalogueGame } from './catalog';
 import { readRawgProxy, saveRawgProxy, searchRawg } from './catalog';
 import PatchNotes from './PatchNotes';
+import PlaythroughJournal from './PlaythroughJournal';
 
 type Page = 'home' | 'library' | 'discover' | 'wishlist' | 'stats';
 type Sort = 'recent' | 'title' | 'rating' | 'hours' | 'year';
@@ -76,7 +77,7 @@ function GameCard({ game, onClick }: { game: Game; onClick: () => void }) {
         {game.favourite && <span className="poster-favourite" title="Favourite"><Heart size={15} fill="currentColor"/></span>}
       </div>
       <div className="card-meta"><h3 title={game.title}>{game.title}</h3><p>{game.year || 'Year unknown'} <span>·</span> {platformSummary(game)}</p></div>
-      <div className="card-bottom"><Pill tone={'status-' + game.status}>{statusLabel[game.status]}</Pill>{(game.dlcs?.length ?? 0) > 0 && <span className="rating-small">{game.dlcs!.length} DLC</span>}{game.rating !== null && <span className="rating-small"><Star size={13} fill="currentColor"/> {game.rating}/10</span>}</div>
+      <div className="card-bottom"><Pill tone={'status-' + game.status}>{statusLabel[game.status]}</Pill>{(game.dlcs?.length ?? 0) > 0 && <span className="rating-small">{game.dlcs!.length} DLC</span>}{(game.playthroughs?.length ?? 0) > 0 && <span className="rating-small">{game.playthroughs!.length} runs</span>}{game.rating !== null && <span className="rating-small"><Star size={13} fill="currentColor"/> {game.rating}/10</span>}</div>
     </button>
   );
 }
@@ -95,6 +96,7 @@ function GameForm({ initial, onClose, onSave }: {
     status: initial.status, ownership: initial.ownership,
     rating: initial.rating, hours: initial.hours, notes: initial.notes,
     completedAt: initial.completedAt, priceTarget: initial.priceTarget, favourite: initial.favourite, dlcs: initial.dlcs ?? [],
+    playthroughs: initial.playthroughs ?? [], journal: initial.journal ?? [],
   } : { ...emptyGame });
   const [working, setWorking] = useState(false);
   const set = <K extends keyof GameInput>(key: K, value: GameInput[K]) => setDraft(d => ({ ...d, [key]: value }));
@@ -219,6 +221,9 @@ export default function App() {
   const completed = collection.filter(g => g.status === 'completed');
   const favourites = collection.filter(g => g.favourite);
   const totalHours = collection.reduce((sum,g) => sum + g.hours, 0);
+  const runCount = collection.reduce((sum,g)=>sum+(g.playthroughs?.length??0),0);
+  const finishedRuns = collection.reduce((sum,g)=>sum+(g.playthroughs?.filter(run=>run.status==='completed').length??0),0);
+  const journalCount = games.reduce((sum,g)=>sum+(g.journal?.length??0),0);
   const ratings = collection.filter(g => g.rating !== null).map(g => g.rating!);
   const avgRating = ratings.length ? (ratings.reduce((a,b) => a+b, 0) / ratings.length).toFixed(1) : '—';
   const suggested = queue.length ? queue[pickIndex % queue.length] : null;
@@ -395,10 +400,18 @@ export default function App() {
       setNotice(saved ? 'RAWG Worker address saved on this device.' : 'RAWG Worker connection cleared.');
     } catch (error) { setNotice(error instanceof Error ? error.message : String(error)); }
   }
-  async function patchGame(game: Game, change: Partial<Game>) {
+  async function patchGame(game: Game, change: Partial<Game>): Promise<boolean> {
     const next = { ...game, ...change, updatedAt: new Date().toISOString() };
-    try { await saveGame(next); await recordPending(next, next.id); setGames(items => items.map(g => g.id === game.id ? next : g)); setNotice('Game updated.'); }
-    catch(e) { setNotice('Could not save: ' + String(e)); }
+    try {
+      await saveGame(next);
+      await recordPending(next, next.id);
+      setGames(items => items.map(g => g.id === game.id ? next : g));
+      setNotice('Game updated.');
+      return true;
+    } catch (e) {
+      setNotice('Could not save: ' + String(e));
+      return false;
+    }
   }
   async function deleteGame(game: Game) {
     if (!window.confirm('Permanently remove "' + game.title + '" from this device? Export a backup first if needed.')) return;
@@ -552,7 +565,16 @@ export default function App() {
                     {!collection.length && <p className="empty-inline">Your platform breakdown appears when you add games.</p>}
                   </section>
                 </div>
-                <div className="muted-note"><BookOpen size={17}/> Only manually entered playtime and ratings are counted. No invented PSN data.</div>
+                <section className="panel run-analytics">
+                  <div className="section-title small"><div><span className="eyebrow">YOUR ADVENTURES</span><h2>Playthrough history</h2></div></div>
+                  <div className="run-analytics-metrics">
+                    <div><strong>{runCount}</strong><span>Recorded playthroughs</span></div>
+                    <div><strong>{finishedRuns}</strong><span>Completed runs</span></div>
+                    <div><strong>{journalCount}</strong><span>Journal entries</span></div>
+                  </div>
+                  <p>Record each replay in the game's details. Older game-level hours stay separate from run hours to avoid counting them twice.</p>
+                </section>
+                <div className="muted-note"><BookOpen size={17}/> Only manually entered game-level playtime and ratings appear in totals. Individual run hours remain separate so past hours aren't double-counted. No invented PSN data.</div>
               </>}
             </>
           )}
@@ -569,6 +591,9 @@ export default function App() {
           {selected.description && <div className="detail-description"><span className="eyebrow">ABOUT THE GAME</span><p>{selected.description}</p></div>}
           {(selected.screenshots ?? []).filter(safeCover).length > 0 && <div className="detail-gallery"><div className="detail-gallery-title"><span className="eyebrow">REAL SCREENSHOTS</span><span>{selected.screenshots?.length ?? 0} images</span></div><div className="detail-gallery-strip">{(selected.screenshots ?? []).filter(safeCover).map((url,i) => <a key={url+'-'+i} href={url} target="_blank" rel="noopener noreferrer"><img loading="lazy" src={url} alt={selected.title + ' screenshot ' + (i+1)}/></a>)}</div><small>External image links. Open an image to see it full size.</small></div>}
           {selected.catalogUrl && safeCover(selected.catalogUrl) && <div className="detail-catalog-source">Game information and artwork: <a href={selected.catalogUrl} target="_blank" rel="noopener noreferrer">{selected.catalogSource === 'rawg' ? 'RAWG' : 'Wikipedia'} ↗</a></div>}
+          <PlaythroughJournal key={selected.id} game={selected}
+            onUpdate={change => patchGame(selected,change)}
+          />
           <DlcPanel key={selected.id} game={selected} proxy={workerAddress}
             onFindManually={() => startDlcSearch(selected)}
             onAttach={entries => importManyCatalogue(entries,'backlog',selected.id)}
