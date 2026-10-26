@@ -916,8 +916,8 @@ h1,h2,h3{font-family:Manrope,'DM Sans',sans-serif}
  .insights-metrics strong{font-size:23px}
  .insights-metrics span{font-size:11px}
  .insights-rating-chart{height:180px;gap:5px}
- .insights-timeline{gap:3px;height:145px}
- .insights-month>span{font-size:7px;letter-spacing:-.4px}
+ .insights-timeline{grid-template-columns:repeat(12,minmax(42px,1fr));gap:7px;height:170px;overflow-x:auto;overflow-y:hidden;padding-bottom:8px;overscroll-behavior-x:contain}
+ .insights-month>span{font-size:10px;letter-spacing:0}
  .discovery-modes{gap:8px;margin:16px 0}
  .discovery-modes button{padding:12px 9px}
  .discovery-modes button strong{font-size:11px}
