@@ -17,6 +17,23 @@ export interface Release {
  */
 export const RELEASE_NOTES: Release[] = [
   {
+    version: '1.6.0',
+    date: '2026-10-26',
+    title: 'Insights and better next-game picks.',
+    summary: 'Deeper personal analytics, explainable backlog recommendations and several ways to choose your next game.',
+    changes: [
+      { type: 'Added', text: 'Four backlog recommendation modes: For your taste, Recently added, Overlooked, and Something different.' },
+      { type: 'Added', text: 'Clear reasons behind recommendations drawn from your own ratings, favourites, genres and backlog dates.' },
+      { type: 'Added', text: 'Start playing from a recommendation without opening the game editor or changing other game data.' },
+      { type: 'Added', text: 'Interactive genre breakdowns ranked by game count, average personal rating or logged hours.' },
+      { type: 'Added', text: 'Personal ratings distribution, median score, completion percentage and monthly dated-completion timeline.' },
+      { type: 'Improved', text: 'Playthrough history, completed runs and journal entries now have a dedicated analytics summary, with run hours kept separate from game totals.' },
+      { type: 'Improved', text: 'Recommendations and charts work offline without external APIs, tracking or invented scores; sparse libraries show helpful empty states.' },
+      { type: 'Fixed', text: 'Wishlist entries are excluded from completion and rating statistics, and unrecorded ratings are not treated as zero.' },
+    ],
+  },
+
+  {
     version: '1.5.0',
     date: '2026-10-26',
     title: 'Every playthrough has a story.',

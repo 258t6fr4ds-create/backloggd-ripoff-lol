@@ -22,6 +22,8 @@ import type { CatalogueGame } from './catalog';
 import { readRawgProxy, saveRawgProxy, searchRawg } from './catalog';
 import PatchNotes from './PatchNotes';
 import PlaythroughJournal from './PlaythroughJournal';
+import InsightsPanel from './InsightsPanel';
+import DiscoveryRecommendations from './DiscoveryRecommendations';
 
 type Page = 'home' | 'library' | 'discover' | 'wishlist' | 'stats';
 type Sort = 'recent' | 'title' | 'rating' | 'hours' | 'year';
@@ -166,8 +168,7 @@ export default function App() {
     setShowSettings(false);
     setShowPatchNotes(true);
   };
-  const [pickIndex, setPickIndex] = useState(0);
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
+   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const importRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -221,13 +222,9 @@ export default function App() {
   const completed = collection.filter(g => g.status === 'completed');
   const favourites = collection.filter(g => g.favourite);
   const totalHours = collection.reduce((sum,g) => sum + g.hours, 0);
-  const runCount = collection.reduce((sum,g)=>sum+(g.playthroughs?.length??0),0);
-  const finishedRuns = collection.reduce((sum,g)=>sum+(g.playthroughs?.filter(run=>run.status==='completed').length??0),0);
-  const journalCount = games.reduce((sum,g)=>sum+(g.journal?.length??0),0);
-  const ratings = collection.filter(g => g.rating !== null).map(g => g.rating!);
+   const ratings = collection.filter(g => g.rating !== null).map(g => g.rating!);
   const avgRating = ratings.length ? (ratings.reduce((a,b) => a+b, 0) / ratings.length).toFixed(1) : '—';
-  const suggested = queue.length ? queue[pickIndex % queue.length] : null;
-  const sortedLibrary = useMemo(() => {
+   const sortedLibrary = useMemo(() => {
     const lower = query.trim().toLowerCase();
     const filtered = games.filter(g => {
       const matchesText = !lower || [g.title, g.genres, g.platform, g.notes].some(s => s.toLowerCase().includes(lower));
@@ -534,15 +531,16 @@ export default function App() {
                 {sortedLibrary.length ? renderCards(sortedLibrary) : games.length ? <Empty icon={<Search size={28}/>} title="No games match" description="Try changing the search or filters." action={<button className="btn btn-subtle" onClick={() => {setQuery('');setStatusFilter('all');}}>Clear filters</button>}/> : <Empty title="Your library starts here" description="Add your first game. Your collection will stay saved on this device." action={<button className="btn btn-primary" onClick={() => setShowCatalogue(true)}><Search size={17}/> Find first game</button>}/>}
               </>}
               {page === 'discover' && <>
-                <div className="page-heading"><div><span className="eyebrow">MAKE A CHOICE</span><h1>Discover</h1><p>A little help deciding what to play next.</p></div></div>
-                <div className="discover-layout">
-                  <section className="panel recommendation"><div className="eyebrow">BACKLOG PICKER</div><h2>Your next adventure</h2><p>Only picks from games you've actually put in your Backlog or On hold.</p>
-                    {suggested ? <div className="recommend-game"><Cover game={suggested}/><div><Pill tone={'status-' + suggested.status}>{statusLabel[suggested.status]}</Pill><h3>{suggested.title}</h3><p>{suggested.platform}{suggested.year ? ' · ' + suggested.year : ''}</p><div className="button-row"><button className="btn btn-primary" onClick={() => setSelectedId(suggested.id)}>View game <ArrowRight size={16}/></button><button className="btn btn-subtle" onClick={() => setPickIndex(n => n + 1)}><Shuffle size={16}/> Another pick</button></div></div></div>
-                    : <Empty icon={<Shuffle size={28}/>} title="Nothing to pick yet" description="Add games to your backlog, and we'll suggest one." action={<button className="btn btn-subtle" onClick={() => setEditing('new')}>Add game</button>}/>}
-                  </section>
-                  <section className="panel discover-side"><div className="mini-icon"><Sparkles size={21}/></div><h2>Built around your taste.</h2><p>GameVault won't pretend to know what you like. Recommendations will use your real library, ratings and play history as we expand this feature.</p><div className="side-metric"><strong>{queue.length}</strong><span>Games waiting in your queue</span></div></section>
-                </div>
-                {favourites.length > 0 && <section className="section-block"><div className="section-title"><div><span className="eyebrow">YOUR HIGHLIGHTS</span><h2>All-time favourites</h2></div></div>{renderCards(favourites, 6)}</section>}
+                <div className="page-heading"><div><span className="eyebrow">YOUR NEXT ADVENTURE</span><h1>Discover</h1><p>Find your next game from your own backlog, with recommendations that explain why.</p></div></div>
+                <DiscoveryRecommendations
+                  games={games}
+                  onOpen={setSelectedId}
+                  onStart={game=>patchGame(game,{status:'playing'})}
+                />
+                {favourites.length>0&&<section className="section-block">
+                  <div className="section-title"><div><span className="eyebrow">YOUR HIGHLIGHTS</span><h2>Your favourites</h2></div></div>
+                  {renderCards(favourites,6)}
+                </section>}
               </>}
               {page === 'wishlist' && <>
                 <div className="page-heading"><div><span className="eyebrow">COMING UP</span><h1>Wishlist<span className="heading-count">{wishlist.length}</span></h1><p>Games you want, without losing track of what they cost.</p></div><div className="library-actionrow">{searchAction}{action}</div></div>
@@ -565,16 +563,7 @@ export default function App() {
                     {!collection.length && <p className="empty-inline">Your platform breakdown appears when you add games.</p>}
                   </section>
                 </div>
-                <section className="panel run-analytics">
-                  <div className="section-title small"><div><span className="eyebrow">YOUR ADVENTURES</span><h2>Playthrough history</h2></div></div>
-                  <div className="run-analytics-metrics">
-                    <div><strong>{runCount}</strong><span>Recorded playthroughs</span></div>
-                    <div><strong>{finishedRuns}</strong><span>Completed runs</span></div>
-                    <div><strong>{journalCount}</strong><span>Journal entries</span></div>
-                  </div>
-                  <p>Record each replay in the game's details. Older game-level hours stay separate from run hours to avoid counting them twice.</p>
-                </section>
-                <div className="muted-note"><BookOpen size={17}/> Only manually entered game-level playtime and ratings appear in totals. Individual run hours remain separate so past hours aren't double-counted. No invented PSN data.</div>
+                <InsightsPanel games={games}/>
               </>}
             </>
           )}

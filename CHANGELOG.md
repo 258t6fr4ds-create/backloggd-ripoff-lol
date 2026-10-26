@@ -2,6 +2,25 @@
 
 All meaningful app updates receive dated, versioned patch notes. These match the in-app **What's New** panel. Entries list changes actually shipped, never planned features.
 
+## [1.6.0] — 2026-10-26
+**Insights and better next-game picks.**
+
+### Added
+- Discover now recommends only your saved Backlog and On hold games, in four selectable modes: **For your taste**, **Recently added**, **Overlooked**, and **Something different**.
+- Each recommended game explains its score in plain language based on your personally rated or favourited genres, or its position in the backlog. Rotate picks, view details, start playing, or show more.
+- Interactive Statistics panels with genre breakdown by library count, your average genre rating, or logged hours.
+- Personal rating histogram, average and median rating, completion percentage, backlog count, and a 12-month chart of dated game completions.
+- Playthrough analytics summarising runs, completed runs, journal entries and separately tracked run-specific hours.
+
+### Improved
+- Analysis is deterministic, client-side and works offline. It uses existing records only, no new service, RAWG key requests or hidden profile.
+- Games without ratings remain unrated, wishlist items are excluded from core completion/ratings, and genres are deduplicated per game.
+- Completion trend only counts completed games with valid dates. Playthrough completions are not mixed into it or game-level hours.
+- Empty states explain missing data instead of fabricating trends or recommending games the user doesn't own.
+- No new data schema; recommendation mode is UI-only and actions use existing local and Supabase sync.
+
+**Data safety:** No database migrations, Cloudflare Worker edits or new third-party API services. Existing game, DLC, platform, journal, playthrough and JSON backup data remains intact.
+
 ## [1.5.0] — 2026-10-26
 **Every playthrough has a story.**
 

@@ -832,3 +832,104 @@ h1,h2,h3{font-family:Manrope,'DM Sans',sans-serif}
  .run-analytics-metrics strong{font-size:18px}
  .run-analytics-metrics span{font-size:10px}
 }
+
+
+/* v1.6.0 - private, data-grounded stats and backlog recommendations */
+.deep-insights{display:flex;flex-direction:column;gap:22px;margin-top:22px;min-width:0}
+.insights-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.insights-heading>div{min-width:0}
+.insights-heading h2{font-family:Manrope,sans-serif;font-size:21px;font-weight:800;margin:7px 0 0;line-height:1.35}
+.insights-heading>svg{flex-shrink:0;color:#b7cfe1}
+.insights-heading-mark{flex:0 0 44px;height:44px;display:grid;place-items:center;color:#d5e9f6;background:#2c3d4d;border:1px solid #495e70;border-radius:12px}
+.insights-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px;margin:20px 0 12px}
+.insights-metrics>div{display:flex;flex-direction:column;gap:5px;min-width:0;padding:16px 12px;border:1px solid #394859;background:#202a35;border-radius:12px}
+.insights-metrics strong{font-family:Manrope,sans-serif;font-size:27px;line-height:1.2;color:#f0f5f8;overflow-wrap:anywhere}
+.insights-metrics span{font-size:11px;line-height:1.4;color:#c1d0dc;font-weight:700}
+.insights-metrics small{font-size:10px;line-height:1.5;color:#9daebc}
+.insights-explanation{font-size:11px;line-height:1.7;color:#a3b1c0;margin:15px 0 0}
+.insights-two-column{margin-top:0}
+.insights-segmented{display:flex;gap:6px;flex-wrap:wrap;margin:16px 0 18px}
+.insights-segmented button{border:1px solid #394959;border-radius:8px;padding:9px 11px;min-height:40px;color:#b8cad8;background:#27313e;font-size:11px;font-weight:700}
+.insights-segmented button.active{border-color:#7d9cb5;background:#405466;color:#eef5fa}
+.insights-bar-list{display:flex;flex-direction:column;gap:12px}
+.insights-bar-row{min-width:0}
+.insights-bar-label{display:flex;justify-content:space-between;gap:12px;font-size:12px;color:#bdcedb;margin-bottom:7px}
+.insights-bar-label span{overflow-wrap:anywhere;min-width:0}
+.insights-bar-label strong{flex-shrink:0;color:#e4eef5}
+.insights-bar-track{height:9px;background:#303e4d;border-radius:99px;overflow:hidden}
+.insights-bar-fill{height:100%;background:linear-gradient(90deg,#5e809b,#b1c7d8);border-radius:99px;min-width:0}
+.insights-bar-row small{display:block;font-size:10px;color:#91a5b5;margin-top:6px}
+.insights-showmore{color:#c6e1f4;background:transparent;min-height:44px;font-size:11px;font-weight:750;margin-top:9px}
+.insights-rating-chart{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px;height:230px;margin:20px 0 6px}
+.insights-rating-col{min-width:0;display:flex;flex-direction:column;align-items:center;gap:9px}
+.insights-rating-value{font-size:11px;color:#d8e7f2;font-weight:800}
+.insights-rating-track{flex:1;display:flex;align-items:flex-end;width:100%;min-height:0;border-bottom:1px solid #667b8a;background:#23303b;border-radius:6px 6px 0 0;overflow:hidden}
+.insights-rating-track>div{width:100%;background:linear-gradient(0deg,#647f99,#aec5d8);border-radius:5px 5px 0 0}
+.insights-rating-col>span{font-size:10px;color:#b4c6d3;white-space:nowrap}
+.insights-timeline{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:6px;height:205px;margin:23px 0 6px}
+.insights-month{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0}
+.insights-month strong{font-size:11px;color:#dbe7f0}
+.insights-month-track{width:100%;flex:1;min-height:0;display:flex;align-items:flex-end;border-bottom:1px solid #577080;background:#22303c;border-radius:5px 5px 0 0;overflow:hidden}
+.insights-month-track>div{width:100%;background:#7295b1;border-radius:5px 5px 0 0}
+.insights-month>span{font-size:9px;text-align:center;color:#aabdc9;white-space:nowrap;overflow:hidden;text-overflow:clip}
+.insights-note{display:flex;align-items:flex-start;gap:9px;margin-top:12px;color:#aec3d2;font-size:11px;line-height:1.7}
+.insights-note svg{flex:0 0 18px;margin-top:2px}
+.intelligent-discovery{margin-bottom:26px;min-width:0}
+.discovery-method,.discovery-footnote{font-size:11px;line-height:1.7;color:#acbdc9;margin-top:12px}
+.discovery-modes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:21px 0}
+.discovery-modes button{display:flex;flex-direction:column;gap:7px;align-items:flex-start;text-align:left;padding:14px 12px;min-height:76px;border-radius:11px;border:1px solid #364657;background:#252d38;color:#bbcbd7}
+.discovery-modes button strong{font-size:12px;color:#edf3f8}
+.discovery-modes button small{font-size:10px;line-height:1.4;color:#a7b7c5}
+.discovery-modes button.active{background:#35495c;border-color:#8aa7c0}
+.discovery-hint{display:flex;align-items:center;gap:9px;font-size:11px;line-height:1.6;color:#bed3e2;padding:13px;background:#283541;border:1px solid #405668;border-radius:9px;margin:12px 0}
+.discovery-hint svg{flex:0 0 16px}
+.discovery-no-matches{display:flex;flex-direction:column;align-items:center;text-align:center;gap:9px;padding:26px;color:#b9cad7}
+.discovery-no-matches h3{font-size:16px}
+.discovery-no-matches p{font-size:12px;line-height:1.6}
+.discovery-result-heading{display:flex;align-items:center;justify-content:space-between;gap:9px;margin:16px 0 14px}
+.discovery-result-heading strong{font-size:12px;color:#c7d8e6}
+.discovery-result-heading button{display:flex;align-items:center;gap:7px;min-height:40px;background:transparent;color:#c5dced;font-size:11px;font-weight:800}
+.discovery-cards{display:flex;flex-direction:column;gap:12px}
+.discovery-card{display:flex;gap:17px;padding:15px;border:1px solid #3b4855;border-radius:13px;background:#202a35;min-width:0}
+.discovery-cover{flex:0 0 112px;width:112px;align-self:stretch;min-height:140px;border-radius:9px;overflow:hidden;display:grid;place-items:center;background:#37434e;color:#a3b8c9}
+.discovery-cover img{height:100%;width:100%;object-fit:cover}
+.discovery-card-text{min-width:0;flex:1;display:flex;flex-direction:column;align-items:flex-start}
+.discovery-card-badges{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.discovery-card-badges span{font-size:9px;font-weight:800;letter-spacing:.35px;color:#acc4d7;background:#304355;border-radius:5px;padding:5px 7px}
+.discovery-card-text h3{font-family:Manrope,sans-serif;font-size:17px;line-height:1.35;margin:10px 0 5px;overflow-wrap:anywhere}
+.discovery-card-meta{font-size:11px;color:#93a9ba;line-height:1.5;overflow-wrap:anywhere}
+.discovery-reason{font-size:11px;line-height:1.6;color:#cadce8;margin-top:12px;overflow-wrap:anywhere}
+.discovery-reason.subtle{color:#a0b3c3;margin-top:2px}
+.discovery-card-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:auto;padding-top:16px}
+.discovery-card-actions .btn{min-height:40px;font-size:11px;padding:8px 12px}
+.discovery-loadmore{min-height:45px;width:100%;margin-top:12px;border:1px solid #435569;background:#2e3c4a;border-radius:10px;color:#d4e6f1;font-size:12px;font-weight:750}
+.discovery-result-message{margin:15px 0;padding:13px;border-radius:9px;background:#284038;color:#bbddcb;font-size:12px}
+@media(max-width:780px){
+ .discovery-modes{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .insights-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:650px){
+ .deep-insights{gap:15px}
+ .insights-heading h2{font-size:18px}
+ .insights-metrics{gap:8px}
+ .insights-metrics>div{padding:12px 10px}
+ .insights-metrics strong{font-size:23px}
+ .insights-metrics span{font-size:11px}
+ .insights-rating-chart{height:180px;gap:5px}
+ .insights-timeline{gap:3px;height:145px}
+ .insights-month>span{font-size:7px;letter-spacing:-.4px}
+ .discovery-modes{gap:8px;margin:16px 0}
+ .discovery-modes button{padding:12px 9px}
+ .discovery-modes button strong{font-size:11px}
+ .discovery-modes button small{font-size:10px}
+ .discovery-card{gap:11px;padding:11px}
+ .discovery-cover{width:82px;flex-basis:82px;min-height:122px}
+ .discovery-card-text h3{font-size:14px}
+ .discovery-card-actions{gap:7px}
+ .discovery-card-actions .btn{width:100%;justify-content:center}
+}
+@media(max-width:360px){
+ .discovery-cover{width:68px;flex-basis:68px}
+ .discovery-card-actions .btn{font-size:10px;padding:7px}
+ .insights-month>span{font-size:6px}
+}

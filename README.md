@@ -17,6 +17,14 @@ Every release must have complete notes in **both** the app's **What's New** pane
 
 The app always displays the current version and a **What's New** history, with an unread marker per browser until the latest entry is viewed. The notes remain available after the user's ChatGPT subscription ends.
 
+## v1.6.0 — Personal insights and discovery
+
+- Discover offers **For your taste**, **Recently added**, **Overlooked** and **Something different**. Recommendations only consider your own Backlog and On hold games. Taste matching uses explicitly rated (7+/10) or favourited genres, with clear explanations and fallbacks when your library has little preference data.
+- Browse matches, rotate suggestions or mark one Playing directly; this uses existing local/cloud sync and does not modify ownership or saved history.
+- Statistics now includes interactive genre breakdown by count, rating or hours, 0–10 rating distribution, average/median rating, completion rate, 12-month timeline of dated game completions, and separate run/journal counts.
+- All insights are local calculations of existing game data. Missing ratings and dates remain missing, wishlist records aren't counted as played games, and run hours are never automatically added to game-level playtime.
+- No backend, database, Cloudflare Worker or paid service changes.
+
 ## v1.5.0 — Playthroughs and gaming journal
 
 - Open any game in your library → **Playthroughs & Journal**.
