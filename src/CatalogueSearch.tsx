@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { FormEvent, KeyboardEvent } from 'react';
 import { ArrowRight, Check, ChevronDown, ExternalLink, Gamepad2, Image, LoaderCircle, Plus, Search, X } from 'lucide-react';
-import { fetchRawgScreenshots, readRawgProxy, searchRawg, searchWikipedia } from './catalog';
+import { fetchRawgScreenshots, readRawgProxy, searchRawg, searchWikipedia, smartSearchExpansion } from './catalog';
 import type { CatalogueGame, CatalogueSource } from './catalog';
-import type { GameStatus } from './types';
+import type { Game, GameStatus } from './types';
 import { safeCover } from './types';
 
 const DEBOUNCE_MS = 420;
@@ -11,16 +11,30 @@ const MAX_SUGGESTIONS = 7;
 const MAX_CACHED_LOOKUPS = 40;
 
 export default function CatalogueSearch({
-  onClose, onImport, onOpenSettings
+  onClose, onImport, onImportMany, library, initialParentId, onOpenSettings
 }: {
   onClose: () => void;
   onImport: (entry: CatalogueGame, status: GameStatus) => Promise<boolean>;
+  onImportMany: (entries: CatalogueGame[], status: GameStatus, parentId?: string) => Promise<{added:number;skipped:number}>;
+  library: Game[];
+  initialParentId?: string | null;
   onOpenSettings: () => void;
 }) {
-  const [query, setQuery] = useState('');
+  const parentGame = library.find(g => g.id === initialParentId);
+  const [query, setQuery] = useState(() => parentGame?.title ?? '');
   // RAWG is always the first choice. Wikipedia is an explicit fallback.
   const [source, setSource] = useState<CatalogueSource>('rawg');
   const [includeExtras, setIncludeExtras] = useState(false);
+  const [smartSearch, setSmartSearch] = useState(() => {
+    try { return localStorage.getItem('gamevault:smartSearch') !== 'false'; }
+    catch { return true; }
+  });
+  const [multiSelect, setMultiSelect] = useState(false);
+  const [selectedGames, setSelectedGames] = useState<CatalogueGame[]>([]);
+  const [destination, setDestination] = useState(initialParentId || 'library');
+  const [batchStatus, setBatchStatus] = useState<GameStatus>('backlog');
+  const [batchError, setBatchError] = useState('');
+  const [batchWorking, setBatchWorking] = useState(false);
   const [results, setResults] = useState<CatalogueGame[]>([]);
   const [selected, setSelected] = useState<CatalogueGame | null>(null);
   const [shots, setShots] = useState<string[]>([]);
@@ -37,7 +51,7 @@ export default function CatalogueSearch({
   const timer = useRef<number | null>(null);
   const cache = useRef(new Map<string, CatalogueGame[]>());
 
-  const lookup = useCallback(async (text: string, provider: CatalogueSource, extras: boolean) => {
+  const lookup = useCallback(async (text: string, provider: CatalogueSource, extras: boolean, intelligent: boolean) => {
     const cleaned = text.trim();
     if (cleaned.length < 2 || (provider === 'rawg' && !proxy)) return;
     const current = ++lookupId.current;
@@ -47,12 +61,12 @@ export default function CatalogueSearch({
     setLoading(true);
     setSearched(false);
     setError('');
-    const cacheKey = [provider, extras ? 'all' : 'games', cleaned.toLowerCase()].join(':');
+    const cacheKey = [provider, extras ? 'all' : 'games', intelligent ? 'smart' : 'literal', cleaned.toLowerCase()].join(':');
     try {
       let found = cache.current.get(cacheKey);
       if (!found) {
         found = provider === 'rawg'
-          ? await searchRawg(cleaned, proxy, abort.signal, extras)
+          ? await searchRawg(cleaned, proxy, abort.signal, extras, intelligent)
           : await searchWikipedia(cleaned, abort.signal);
         if (abort.signal.aborted || current !== lookupId.current) return;
         if (cache.current.size >= MAX_CACHED_LOOKUPS) {
@@ -96,13 +110,13 @@ export default function CatalogueSearch({
     setSearched(false);
     timer.current = window.setTimeout(() => {
       timer.current = null;
-      void lookup(cleaned, source, includeExtras);
+      void lookup(cleaned, source, includeExtras, smartSearch);
     }, DEBOUNCE_MS);
     return () => {
       if (timer.current !== null) window.clearTimeout(timer.current);
       controller.current?.abort();
     };
-  }, [query, source, includeExtras, proxy, lookup]);
+  }, [query, source, includeExtras, smartSearch, proxy, lookup]);
 
   useEffect(() => () => {
     if (timer.current !== null) window.clearTimeout(timer.current);
@@ -146,7 +160,7 @@ export default function CatalogueSearch({
     }
     if (query.trim().length < 2) { setError('Enter at least two characters.'); return; }
     if (timer.current !== null) { window.clearTimeout(timer.current); timer.current = null; }
-    void lookup(query, source, includeExtras);
+    void lookup(query, source, includeExtras, smartSearch);
   }
   function onQueryKeyDown(event: KeyboardEvent<HTMLInputElement>) {
     if (selected || loading || !results.length) return;
@@ -168,11 +182,44 @@ export default function CatalogueSearch({
     finally { setAdding(false); }
   }
 
-  const visibleResults = showAll ? results : results.slice(0, MAX_SUGGESTIONS);
+  function toggleSelection(entry: CatalogueGame) {
+    setSelectedGames(items => items.some(g=>g.id===entry.id)
+      ? items.filter(g=>g.id!==entry.id) : [...items,entry].slice(0,80));
+  }
+  async function importBatch() {
+    if (!selectedGames.length || batchWorking) return;
+    setBatchWorking(true);setBatchError('');
+    try {
+      const result=await onImportMany(selectedGames,batchStatus,destination==='library'?undefined:destination);
+      if(result.added>0)onClose();
+      else setBatchError('No new entries added. These may already exist in your library.');
+    }catch(error){setBatchError(String(error));}
+    finally {setBatchWorking(false);}
+  }
+  async function importAsDlc() {
+    if(!selected||destination==='library'||batchWorking)return;
+    setBatchWorking(true);setBatchError('');
+    try {
+      const outcome=await onImportMany([selected],batchStatus,destination);
+      if(outcome.added>0)onClose();
+      else setBatchError('This DLC is already attached to that game.');
+    }catch(error){setBatchError(String(error));}
+    finally{setBatchWorking(false);}
+  }
+  function toggleSmart(enabled:boolean){
+    setSmartSearch(enabled);
+    try {localStorage.setItem('gamevault:smartSearch',String(enabled));}
+    catch { /* still works for this session */ }
+  }
+  const smartInterpretation=smartSearch && source==='rawg' ? smartSearchExpansion(query) : '';
+  const isCorrection=smartInterpretation && smartInterpretation!==query.trim().toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+  const visibleResults=showAll?results:results.slice(0,MAX_SUGGESTIONS);
+  const libraryMatch=selected && library.find(g=>(g.catalogId&&g.catalogId===selected.id)
+    || (g.title.toLowerCase()===selected.title.toLowerCase()&&g.year===selected.year));
   return <div className="modal-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
     <section className="modal catalogue-modal" role="dialog" aria-modal="true" aria-label="Find a game in the catalogue">
       <header className="modal-heading">
-        <div><span className="eyebrow">REAL GAMES, REAL ARTWORK</span><h2>Find a game</h2></div>
+        <div><span className="eyebrow">{parentGame?'ADD EXPANSIONS TO YOUR GAME':'REAL GAMES, REAL ARTWORK'}</span><h2>{parentGame?'Find DLC for '+parentGame.title:'Find a game'}</h2></div>
         <button className="icon-btn" onClick={onClose} aria-label="Close catalogue"><X size={20}/></button>
       </header>
       <div className="catalogue-body">
@@ -185,7 +232,15 @@ export default function CatalogueSearch({
           <span>Games and DLC · Popular matches first</span>
           <label><input type="checkbox" checked={includeExtras} onChange={e => setIncludeExtras(e.target.checked)}/> Include soundtracks, demos and extras</label>
         </div>}
+        {source==='rawg'&&proxy&&<div className="catalogue-smart-options">
+          <label><input type="checkbox" checked={smartSearch} onChange={e=>toggleSmart(e.target.checked)}/> Smart search <span>Typos, abbreviations &amp; popular keyword matches</span></label>
+          {isCorrection&&<small>Trying “{smartInterpretation}” as well as your original search</small>}
+        </div>}
         {source === 'wikipedia' && <p className="catalogue-description">Wikipedia is a fallback for missing games. Search results may include unrelated articles; RAWG is the default game catalogue.</p>}
+        <div className="catalogue-bulk-toolbar">
+          <button className={'btn '+(multiSelect?'btn-primary':'btn-subtle')} aria-pressed={multiSelect} onClick={()=>{setMultiSelect(v=>!v);setSelected(null);setBatchError('');}}><Check size={16}/>{multiSelect?'Selecting multiple':'Select multiple games'}</button>
+          {multiSelect&&<span>{selectedGames.length} selected · Search again to add more</span>}
+        </div>
         <form className="catalogue-searchline" onSubmit={runSearch} role="search">
           <Search size={19}/>
           <input aria-label="Search game catalogue" aria-autocomplete="list"
@@ -206,10 +261,11 @@ export default function CatalogueSearch({
           {query.trim().length >= 2 && !loading && visibleResults.length > 0 && <div className="catalogue-results" id="catalogue-suggestions" role="listbox" aria-label="Suggested game matches">
             <div className="catalogue-result-count">{source === 'rawg' ? 'Popular matching games and DLC first' : 'Wikipedia article matches'} · Select a result</div>
             {visibleResults.map((game, index) => <button key={game.id} id={'catalogue-option-' + index} type="button"
-              role="option" aria-selected={highlighted === index} className={'catalogue-result' + (highlighted === index ? ' keyboard-active' : '')}
-              onMouseEnter={() => setHighlighted(index)} onClick={() => choose(game)}>
+              role="option" aria-selected={multiSelect ? selectedGames.some(g=>g.id===game.id) : highlighted === index}
+              className={'catalogue-result' + (highlighted === index && !multiSelect ? ' keyboard-active' : '') + (selectedGames.some(g=>g.id===game.id) ? ' catalogue-checked' : '')}
+              onMouseEnter={() => setHighlighted(index)} onClick={() => multiSelect?toggleSelection(game):choose(game)}>
               <div className="catalogue-result-img">{safeCover(game.coverUrl) ? <img alt="" src={game.coverUrl} loading="lazy"/> : <Gamepad2 size={21}/>}</div>
-              <div><strong>{game.title}</strong><span>{game.year || 'Year not listed'} · {game.source === 'rawg' ? 'RAWG' : 'Wikipedia'}{game.genres ? ' · ' + game.genres : ''}</span></div><ArrowRight size={16}/></button>)}
+              <div><strong>{game.title}</strong><span>{game.year || 'Year not listed'} · {game.source === 'rawg' ? 'RAWG' : 'Wikipedia'}{game.genres ? ' · ' + game.genres : ''}</span></div>{multiSelect ? <span className="catalogue-select-indicator">{selectedGames.some(g=>g.id===game.id)?<Check size={15}/>:<Plus size={15}/>}</span> : <ArrowRight size={16}/>}</button>)}
             {!showAll && results.length > MAX_SUGGESTIONS && <button className="catalogue-showmore" onClick={() => {setShowAll(true);setHighlighted(-1);}}>Show all {results.length} results <ChevronDown size={16}/></button>}
           </div>}
           {query.trim().length >= 2 && searched && !loading && !results.length && !error && <p className="catalogue-noresults">No matching {source === 'rawg' ? 'games or DLC' : 'articles'} found. Try another spelling{source === 'rawg' && !includeExtras ? ', enable extras' : ''}, or add the game manually.</p>}
@@ -225,8 +281,35 @@ export default function CatalogueSearch({
           {shots.length > 0 && <><div className="eyebrow catalogue-gallery-heading"><Image size={14}/> REAL GAME SCREENSHOTS · {shots.length}</div><div className="catalogue-gallery">{shots.slice(0,8).map((url, i) => <a key={url + i} href={url} target="_blank" rel="noopener noreferrer"><img src={url} alt={selected.title + ' screenshot ' + (i+1)} loading="lazy"/></a>)}</div></>}
           {shotsLoading && <p className="catalogue-description">Loading screenshot gallery…</p>}
           <div className="catalogue-import-tip">Artwork and screenshots are fetched from third parties and might be unavailable later. You can edit all fields after importing; your personal ratings and stats are never overwritten.</div>
-          <div className="catalogue-buttons"><button className="btn btn-primary" onClick={() => importSelected('backlog')} disabled={adding}><Plus size={16}/> Add to library</button><button className="btn btn-subtle" onClick={() => importSelected('wishlist')} disabled={adding}><Check size={16}/> Add to wishlist</button></div>
+          {libraryMatch&&<div className="catalogue-existing-dlc"><strong>Already in your library</strong><p>{libraryMatch.dlcs?.length??0} DLC(s) currently attached to this game. Open it in your library to see or manage them.</p></div>}
+          {library.length>0&&<label className="catalogue-destination">Add as DLC under
+            <select value={destination} disabled={!!initialParentId} onChange={e=>setDestination(e.target.value)}>
+              {!initialParentId&&<option value="library">Select a parent game…</option>}
+              {library.filter(g=>g.status!=='wishlist').map(g=><option value={g.id} key={g.id}>{g.title}</option>)}
+            </select>
+          </label>}
+          <div className="catalogue-buttons">
+            {destination!=='library'&&<button className="btn btn-primary" onClick={()=>void importAsDlc()} disabled={batchWorking}><Plus size={16}/> Attach as DLC</button>}
+            {!initialParentId&&<><button className="btn btn-primary" onClick={() => importSelected('backlog')} disabled={adding}><Plus size={16}/> Add to library</button><button className="btn btn-subtle" onClick={() => importSelected('wishlist')} disabled={adding}><Check size={16}/> Add to wishlist</button></>}
+          </div>
         </div>}
+        {multiSelect&&<div className="catalogue-batch-action">
+          <strong>{selectedGames.length} selected for import</strong>
+          <label>Destination <select value={destination} disabled={!!initialParentId} onChange={e=>setDestination(e.target.value)}>
+            {!initialParentId&&<option value="library">Games in library</option>}
+            {library.filter(g=>g.status!=='wishlist').map(g=><option value={g.id} key={g.id}>DLC under: {g.title}</option>)}
+          </select></label>
+          {destination==='library'&&<label>Set status <select value={batchStatus} onChange={e=>setBatchStatus(e.target.value as GameStatus)}>
+            <option value="backlog">Backlog</option><option value="playing">Playing</option><option value="completed">Completed</option><option value="wishlist">Wishlist</option>
+          </select></label>}
+          <div className="catalogue-batch-buttons">
+            <button className="btn btn-ghost" onClick={()=>setSelectedGames([])} disabled={!selectedGames.length||batchWorking}>Clear</button>
+            <button className="btn btn-primary" onClick={()=>void importBatch()} disabled={!selectedGames.length||batchWorking}>
+              <Plus size={16}/>{batchWorking?'Adding…':'Add '+selectedGames.length+' selected'}
+            </button>
+          </div>
+        </div>}
+        {batchError&&<div className="catalogue-error" role="alert">{batchError}</div>}
         <p className="catalogue-footer-note">GameVault is independent of Wikipedia, Wikimedia and RAWG. External images and information remain credited to their sources. Filtering obvious extras is best-effort; RAWG does not provide a guaranteed content-type field in these search results.</p>
       </div>
     </section>
