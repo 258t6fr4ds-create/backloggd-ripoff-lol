@@ -17,6 +17,23 @@ export interface Release {
  */
 export const RELEASE_NOTES: Release[] = [
   {
+    version: '1.4.0',
+    date: '2026-10-26',
+    title: 'Smarter discovery and DLC collections.',
+    summary: 'Find the games you mean, import several together, and organise DLCs under their parent games.',
+    changes: [
+      { type: 'Added', text: 'Optional Smart search with common acronyms, recognised shorthand, minor typo corrections, and a switch to disable it.' },
+      { type: 'Improved', text: 'Ambiguous searches such as Rivals also query the popular intended title Marvel Rivals, with exact preferred matches ranked first.' },
+      { type: 'Added', text: 'Select multiple results across catalogue searches and import them together to library or wishlist.' },
+      { type: 'Added', text: 'Add one or several DLCs under an existing game directly from the search catalogue.' },
+      { type: 'Added', text: 'Each library game now has its own DLC section, with owned/not-owned toggles, source links and removable entries.' },
+      { type: 'Improved', text: 'Game cards show their DLC count; searching a library game reveals its linked DLCs.' },
+      { type: 'Improved', text: 'Bulk imports skip existing catalogue IDs and duplicate game titles, and preserve local/cloud-sync record compatibility.' },
+      { type: 'Fixed', text: 'The parent game cannot be attached to itself as its own DLC.' },
+    ],
+  },
+
+  {
     version: '1.3.6',
     date: '2026-10-26',
     title: 'Better searches, tidier layout.',

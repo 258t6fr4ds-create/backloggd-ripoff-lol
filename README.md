@@ -17,6 +17,15 @@ Every release must have complete notes in **both** the app's **What's New** pane
 
 The app always displays the current version and a **What's New** history, with an unread marker per browser until the latest entry is viewed. The notes remain available after the user's ChatGPT subscription ends.
 
+## v1.4.0 — Smart search, DLC and batch import
+
+- RAWG's **Smart search** is enabled by default, detects common game acronyms and small typos, and handles keyword shortcuts like `rivals` → `Marvel Rivals`. The switch can be disabled in Find Game; the preference stays on the device. Searches use at most two RAWG requests.
+- **Select multiple games** in Find Game, keep selecting across different searches, choose a status and add in a single batch; duplicate game IDs/titles are skipped.
+- **DLC belongs under a base game**, not as another main-grid game: open a library game → DLC → Find DLC, or in a search result choose an existing parent game and Attach as DLC. The same destination is available for bulk selections.
+- DLCs are stored with the parent (including ownership toggles) in local IndexedDB, optional Supabase sync and existing JSON backups. Game editor saves retain linked DLCs.
+- All additions require selection/confirmation; there is no guessing parent relationships based on a title.
+- No backend schema changes, Worker redeployment or paid services.
+
 ## v1.3.6 — Mobile search bar and popularity
 
 - The clear-search X stays on the same horizontal row as the input on all iPhone widths.

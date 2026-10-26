@@ -283,7 +283,8 @@ export default function App() {
         const existing=new Set(original.flatMap(d=>[d.catalogId,d.title.toLowerCase()].filter(Boolean)));
         const additions:GameDlc[]=[];
         for(const entry of uniqueEntries){
-          if(existing.has(entry.id)||existing.has(entry.title.toLowerCase())||original.length+additions.length>=80)continue;
+          if(existing.has(entry.id)||existing.has(entry.title.toLowerCase())||original.length+additions.length>=80
+            || entry.id===parent.catalogId || entry.title.toLowerCase()===parent.title.toLowerCase())continue;
           additions.push({id:crypto.randomUUID(),title:entry.title.slice(0,160),
             year:entry.year,coverUrl:safeCover(entry.coverUrl),catalogId:entry.id,
             catalogUrl:safeCover(entry.sourceUrl),owned:false,addedAt:now});

@@ -155,7 +155,8 @@ export default function CatalogueSearch({
   function runSearch(event: FormEvent) {
     event.preventDefault();
     if (highlighted >= 0 && results[highlighted] && !showAll) {
-      choose(results[highlighted]);
+      if(multiSelect)toggleSelection(results[highlighted]);
+      else choose(results[highlighted]);
       return;
     }
     if (query.trim().length < 2) { setError('Enter at least two characters.'); return; }
@@ -281,11 +282,15 @@ export default function CatalogueSearch({
           {shots.length > 0 && <><div className="eyebrow catalogue-gallery-heading"><Image size={14}/> REAL GAME SCREENSHOTS · {shots.length}</div><div className="catalogue-gallery">{shots.slice(0,8).map((url, i) => <a key={url + i} href={url} target="_blank" rel="noopener noreferrer"><img src={url} alt={selected.title + ' screenshot ' + (i+1)} loading="lazy"/></a>)}</div></>}
           {shotsLoading && <p className="catalogue-description">Loading screenshot gallery…</p>}
           <div className="catalogue-import-tip">Artwork and screenshots are fetched from third parties and might be unavailable later. You can edit all fields after importing; your personal ratings and stats are never overwritten.</div>
-          {libraryMatch&&<div className="catalogue-existing-dlc"><strong>Already in your library</strong><p>{libraryMatch.dlcs?.length??0} DLC(s) currently attached to this game. Open it in your library to see or manage them.</p></div>}
+          {libraryMatch&&<div className="catalogue-existing-dlc"><strong>Already in your library</strong>
+              <details><summary>View linked DLC ({libraryMatch.dlcs?.length??0})</summary>
+                {libraryMatch.dlcs?.length ? <ul>{libraryMatch.dlcs.map(d=><li key={d.id}>{d.title} · {d.owned?'Owned':'Not marked owned'}</li>)}</ul> : <p>No DLC attached yet.</p>}
+              </details>
+            </div>}
           {library.length>0&&<label className="catalogue-destination">Add as DLC under
             <select value={destination} disabled={!!initialParentId} onChange={e=>setDestination(e.target.value)}>
               {!initialParentId&&<option value="library">Select a parent game…</option>}
-              {library.filter(g=>g.status!=='wishlist').map(g=><option value={g.id} key={g.id}>{g.title}</option>)}
+              {library.filter(g=>g.status!=='wishlist'||g.id===initialParentId).map(g=><option value={g.id} key={g.id}>{g.title}</option>)}
             </select>
           </label>}
           <div className="catalogue-buttons">
@@ -297,7 +302,7 @@ export default function CatalogueSearch({
           <strong>{selectedGames.length} selected for import</strong>
           <label>Destination <select value={destination} disabled={!!initialParentId} onChange={e=>setDestination(e.target.value)}>
             {!initialParentId&&<option value="library">Games in library</option>}
-            {library.filter(g=>g.status!=='wishlist').map(g=><option value={g.id} key={g.id}>DLC under: {g.title}</option>)}
+            {library.filter(g=>g.status!=='wishlist'||g.id===initialParentId).map(g=><option value={g.id} key={g.id}>DLC under: {g.title}</option>)}
           </select></label>
           {destination==='library'&&<label>Set status <select value={batchStatus} onChange={e=>setBatchStatus(e.target.value as GameStatus)}>
             <option value="backlog">Backlog</option><option value="playing">Playing</option><option value="completed">Completed</option><option value="wishlist">Wishlist</option>

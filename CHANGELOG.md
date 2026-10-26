@@ -2,6 +2,27 @@
 
 All meaningful app updates receive dated, versioned patch notes. These match the in-app **What's New** panel. Entries list changes actually shipped, never planned features.
 
+## [1.4.0] — 2026-10-26
+**Smarter discovery and DLC collections.**
+
+### Added
+- Optional Smart search (on by default) that recognises common gaming acronyms, shorthand, popular game keywords and minor spelling mistakes. The option stays on/off per device.
+- “rivals” expands to “Marvel Rivals” while also searching the original term; exact recognised game matches are prioritised above lesser-known keyword collisions.
+- Multi-select catalogue import: select games across several searches, pick library/wishlist status, or select a parent game to add multiple DLCs in one batch.
+- Nested DLC records inside parent games, with artwork, release year, source links, owned toggles and removal controls.
+- DLC section in each game's detail view, with Find DLC directly launching the catalogue and returning linked expansions under the parent.
+- Linked DLC counts on library game cards and DLC lists in matching search previews.
+
+### Improved
+- Two-query maximum per RAWG search when Smart search provides a different lookup; debounced typing, request cancellation and previous search result caching remain.
+- Duplicate catalogue IDs and identical game/year records are skipped; DLC imports skip existing add-ons and prevent self-linking.
+- Normalised nested DLC records travel with their parent through the existing JSON backup and cloud sync flows.
+- Mobile-friendly bulk-selection and DLC management UI.
+
+**Limitations:** Smart search uses a local dictionary of popular titles plus small-edit corrections to common game terms; it is not a full internet-scale spelling service. DLC relationships are user-selected, not automatically claimed from RAWG's imperfect content metadata. Library expansion records are stored inside their parent game, up to 80 DLC per parent.
+
+**No migration or new backend required:** Existing database, Supabase tables, RAWG Worker key, and saved games remain intact.
+
 ## [1.3.6] — 2026-10-26
 **Better searches, tidier layout.**
 
