@@ -5,6 +5,7 @@ import { fetchRawgScreenshots, readRawgProxy, searchRawg, searchWikipedia, smart
 import type { CatalogueGame, CatalogueSource } from './catalog';
 import type { Game, GameStatus } from './types';
 import { safeCover } from './types';
+import DlcPanel from './DlcPanel';
 
 const DEBOUNCE_MS = 420;
 const MAX_SUGGESTIONS = 7;
@@ -287,6 +288,10 @@ export default function CatalogueSearch({
                 {libraryMatch.dlcs?.length ? <ul>{libraryMatch.dlcs.map(d=><li key={d.id}>{d.title} · {d.owned?'Owned':'Not marked owned'}</li>)}</ul> : <p>No DLC attached yet.</p>}
               </details>
             </div>}
+          {libraryMatch?.catalogId?.startsWith('rawg:')&&<DlcPanel compact game={libraryMatch} proxy={proxy}
+            onFindManually={()=>{setSelected(null);setDestination(libraryMatch.id);setQuery(libraryMatch.title);}}
+            onAttach={entries=>onImportMany(entries,'backlog',libraryMatch.id)}
+          />}
           {library.length>0&&<label className="catalogue-destination">Add as DLC under
             <select value={destination} disabled={!!initialParentId} onChange={e=>setDestination(e.target.value)}>
               {!initialParentId&&<option value="library">Select a parent game…</option>}

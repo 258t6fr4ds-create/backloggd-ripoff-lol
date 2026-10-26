@@ -17,6 +17,7 @@ import {
 import type { Game, GameDlc, GameInput, GameStatus, Ownership } from './types';
 import { APP_VERSION } from './releaseNotes';
 import CatalogueSearch from './CatalogueSearch';
+import DlcPanel from './DlcPanel';
 import type { CatalogueGame } from './catalog';
 import { readRawgProxy, saveRawgProxy } from './catalog';
 import PatchNotes from './PatchNotes';
@@ -508,20 +509,11 @@ export default function App() {
           {selected.description && <div className="detail-description"><span className="eyebrow">ABOUT THE GAME</span><p>{selected.description}</p></div>}
           {(selected.screenshots ?? []).filter(safeCover).length > 0 && <div className="detail-gallery"><div className="detail-gallery-title"><span className="eyebrow">REAL SCREENSHOTS</span><span>{selected.screenshots?.length ?? 0} images</span></div><div className="detail-gallery-strip">{(selected.screenshots ?? []).filter(safeCover).map((url,i) => <a key={url+'-'+i} href={url} target="_blank" rel="noopener noreferrer"><img loading="lazy" src={url} alt={selected.title + ' screenshot ' + (i+1)}/></a>)}</div><small>External image links. Open an image to see it full size.</small></div>}
           {selected.catalogUrl && safeCover(selected.catalogUrl) && <div className="detail-catalog-source">Game information and artwork: <a href={selected.catalogUrl} target="_blank" rel="noopener noreferrer">{selected.catalogSource === 'rawg' ? 'RAWG' : 'Wikipedia'} ↗</a></div>}
-          <section className="detail-dlc">
-            <div className="detail-dlc-head">
-              <div><span className="eyebrow">EXPANSIONS & ADD-ONS</span><h3>DLC <span className="heading-count">{selected.dlcs?.length ?? 0}</span></h3></div>
-              <button className="btn btn-subtle" onClick={() => startDlcSearch(selected)}><Plus size={16}/> Find DLC</button>
-            </div>
-            {(selected.dlcs?.length ?? 0) === 0
-              ? <p className="detail-dlc-empty">No DLC linked yet. Find DLC to attach expansions to this game, not your main library.</p>
-              : <div className="detail-dlc-list">{selected.dlcs?.map(d=><div className="detail-dlc-row" key={d.id}>
-                <div className="detail-dlc-image">{safeCover(d.coverUrl)?<img src={d.coverUrl} alt="" loading="lazy"/>:<Gamepad2 size={21}/>}</div>
-                <div className="detail-dlc-title"><strong>{d.title}</strong><small>{d.year??'Year unknown'} · {d.owned?'Owned':'Not marked owned'}</small>{safeCover(d.catalogUrl)&&<a href={d.catalogUrl} target="_blank" rel="noopener noreferrer">Source ↗</a>}</div>
-                <button className="btn btn-subtle" onClick={()=>void updateDlc(selected,d.id,'toggle')}>{d.owned?'Owned':'Mark owned'}</button>
-                <button className="icon-btn" aria-label={'Remove DLC '+d.title} onClick={()=>{if(window.confirm('Remove this DLC from '+selected.title+'?'))void updateDlc(selected,d.id,'remove');}}><X size={18}/></button>
-              </div>)}</div>}
-          </section>
+          <DlcPanel key={selected.id} game={selected} proxy={workerAddress}
+            onFindManually={() => startDlcSearch(selected)}
+            onAttach={entries => importManyCatalogue(entries,'backlog',selected.id)}
+            onModify={(id,action) => updateDlc(selected,id,action)}
+          />
           <div className="detail-notes"><span className="eyebrow">YOUR NOTES</span><p>{selected.notes || 'No notes yet. Edit this game to add your thoughts or progress.'}</p></div>
           <footer className="detail-footer"><small>Added {dateLabel(selected.addedAt)} · Updated {dateLabel(selected.updatedAt)}</small><button className="danger-link" onClick={() => deleteGame(selected)}><Trash2 size={16}/> Remove game</button></footer>
         </section>

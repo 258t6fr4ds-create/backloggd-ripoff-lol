@@ -23,6 +23,7 @@ export default function DlcPanel({
   const [saving,setSaving]=useState(false);
   const [showExtras,setShowExtras]=useState(false);
   const [feedback,setFeedback]=useState('');
+  const [retryCount,setRetryCount]=useState(0);
   const canLookup=!!proxy && /^rawg:\d+$/.test(game.catalogId??'');
   useEffect(()=>{setResults(null);setSelected([]);setError('');setDiscoverOpen(false);},[game.id]);
   useEffect(()=>{
@@ -35,7 +36,7 @@ export default function DlcPanel({
       if(!controller.signal.aborted)setError(reason instanceof Error ? reason.message : 'Could not load RAWG additions.');
     }).finally(()=>{if(!controller.signal.aborted)setLoading(false);});
     return ()=>controller.abort();
-  },[canLookup,discoverOpen,game.catalogId,proxy,results]);
+  },[canLookup,discoverOpen,game.catalogId,proxy,results,retryCount]);
   const linked = useMemo(()=>new Set((game.dlcs??[]).flatMap(d=>[d.catalogId,d.title.toLowerCase()].filter(Boolean))),[game.dlcs]);
   const remaining=results?.filter(r=>!linked.has(r.id)&&!linked.has(r.title.toLowerCase())&&r.id!==game.catalogId)??[];
   const primary=remaining.filter(item=>item.kind==='expansion');
@@ -87,7 +88,7 @@ export default function DlcPanel({
       {loading&&<p className="related-dlc-loading"><LoaderCircle className="spin" size={17}/> Looking up add-ons…</p>}
       {error&&<div className="catalogue-error" role="alert">{error}
         {error.includes('Worker needs')&&<p className="related-dlc-help">The GitHub Worker script now includes the DLC route, but the deployed Cloudflare Worker needs to be updated separately. <a href="https://github.com/258t6fr4ds-create/backloggd-ripoff-lol/blob/main/worker/index.js" target="_blank" rel="noopener noreferrer">View updated Worker source ↗</a></p>}
-        <button className="related-dlc-retry" onClick={()=>{setResults(null);setError('');}}>Retry</button>
+        <button className="related-dlc-retry" onClick={()=>{setResults(null);setError('');setRetryCount(n=>n+1);}}>Retry</button>
       </div>}
       {results!==null&&<>
         {!results.length&&<p className="detail-dlc-empty">RAWG doesn't currently list any related editions or DLC for this game.</p>}
