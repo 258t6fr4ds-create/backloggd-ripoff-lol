@@ -259,6 +259,38 @@ export async function searchRawg(query: string, proxy: string, signal?: AbortSig
     }).slice(0,30).map(mapRawgGame);
 }
 
+
+export type RawgAdditionKind = 'expansion' | 'edition' | 'other';
+export interface RawgAddition extends CatalogueGame { kind: RawgAdditionKind }
+function additionKind(name: string): RawgAdditionKind {
+  if (/\b(?:soundtrack|ost|art\s*book|artbook|wallpaper|wallpapers|companion\s+app|trailer|demo|beta|guide|theme)\b/i.test(name)) return 'other';
+  if (/\b(?:goty|game\s+of\s+the\s+year|definitive|ultimate|complete|deluxe|gold|collector.s|premium|anniversary|bundle|edition|collection)\b/i.test(name)) return 'edition';
+  return 'expansion';
+}
+/** RAWG supplies actual relationships, not guessed title matches.
+ * Results may include editions and apps, so these are grouped separately.
+ * A 404 generally means the user's old Worker hasn't been updated yet.
+ */
+export async function fetchRawgAdditions(gameCatalogId: string, proxy: string, signal?: AbortSignal): Promise<RawgAddition[]> {
+  const id = gameCatalogId.replace(/^rawg:/,'');
+  if (!proxy) throw Error('Connect your RAWG Worker in Settings first.');
+  if (!/^\d+$/.test(id)) throw Error('This game has no RAWG ID. Find it via RAWG to browse related DLC.');
+  const url = proxy+'/games/'+id+'/additions';
+  const response = await fetch(url,{signal});
+  if (response.status === 404) throw Error('The Cloudflare Worker needs the v1.4.1 DLC update. Update its code to enable related DLC.');
+  if (!response.ok) throw Error('Could not load related DLC from RAWG ('+response.status+').');
+  const data=await response.json() as {results?:RawgGame[]};
+  const seen=new Set<number>();
+  return (data.results??[])
+    .filter((g): g is RawgGame & {id:number;name:string} => typeof g.id==='number' && g.id>0 && typeof g.name==='string' && g.name.trim().length>0)
+    .filter(g=>{if(seen.has(g.id))return false;seen.add(g.id);return true;})
+    .map(g=>({...mapRawgGame(g),kind:additionKind(g.name)}))
+    .sort((a,b)=>{
+      const priority={expansion:0,edition:1,other:2};
+      return priority[a.kind]-priority[b.kind] || (b.popularity??0)-(a.popularity??0) || a.title.localeCompare(b.title);
+    });
+}
+
 export async function fetchRawgScreenshots(gameId: string, proxy: string, signal?: AbortSignal): Promise<string[]> {
   const id = gameId.replace(/^rawg:/, '');
   if (!/^\d+$/.test(id) || !proxy) return [];
