@@ -4,6 +4,17 @@ export type GameStatus = (typeof STATUSES)[number];
 export const OWNERSHIPS = ['digital', 'physical', 'subscription', 'not-owned'] as const;
 export type Ownership = (typeof OWNERSHIPS)[number];
 
+export interface GameDlc {
+  id: string;
+  title: string;
+  year: number | null;
+  coverUrl: string;
+  catalogId: string;
+  catalogUrl: string;
+  owned: boolean;
+  addedAt: string;
+}
+
 export interface Game {
   id: string;
   title: string;
@@ -16,6 +27,7 @@ export interface Game {
   catalogId?: string;
   catalogUrl?: string;
   catalogSource?: 'rawg' | 'wikipedia';
+  dlcs?: GameDlc[];
   status: GameStatus;
   ownership: Ownership;
   rating: number | null;
@@ -48,7 +60,7 @@ export const ownershipLabel: Record<Ownership, string> = {
 
 export const emptyGame: GameInput = {
   title: '', year: null, platform: 'PS5', genres: '', coverUrl: '',
-  status: 'backlog', ownership: 'digital', rating: null, hours: 0,
+  status: 'backlog', ownership: 'digital', rating: null, hours: 0, dlcs: [],
   notes: '', completedAt: '', priceTarget: null, favourite: false,
 };
 
@@ -72,6 +84,21 @@ export function normalizeGame(raw: unknown): Game | null {
     catalogId: text('catalogId').slice(0, 120),
     catalogUrl: safeCover(text('catalogUrl').slice(0, 2048)),
     catalogSource: g.catalogSource === 'rawg' || g.catalogSource === 'wikipedia' ? g.catalogSource : undefined,
+    dlcs: Array.isArray(g.dlcs) ? g.dlcs.slice(0,80).flatMap(item => {
+      if (!item || typeof item !== 'object') return [];
+      const d = item as Record<string,unknown>;
+      if (typeof d.title !== 'string' || !d.title.trim()) return [];
+      return [{
+        id: typeof d.id === 'string' && d.id.length < 130 ? d.id : crypto.randomUUID(),
+        title: d.title.trim().slice(0,160),
+        year: numberOrNull(d.year,2200),
+        coverUrl: typeof d.coverUrl === 'string' ? safeCover(d.coverUrl.slice(0,2048)) : '',
+        catalogId: typeof d.catalogId === 'string' ? d.catalogId.slice(0,120) : '',
+        catalogUrl: typeof d.catalogUrl === 'string' ? safeCover(d.catalogUrl.slice(0,2048)) : '',
+        owned: d.owned === true,
+        addedAt: typeof d.addedAt === 'string' ? d.addedAt.slice(0,40) : now,
+      } satisfies GameDlc];
+    }) : [],
     status: STATUSES.includes(g.status as GameStatus) ? g.status as GameStatus : 'backlog',
     ownership: OWNERSHIPS.includes(g.ownership as Ownership) ? g.ownership as Ownership : 'not-owned',
     rating: numberOrNull(g.rating, 10),

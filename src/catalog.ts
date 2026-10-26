@@ -16,6 +16,7 @@ export interface CatalogueGame {
   source: CatalogueSource;
   sourceUrl: string;
   screenshots: string[];
+  popularity?: number;
 }
 
 const KEY = 'gamevault:rawgProxyUrl';
@@ -99,6 +100,7 @@ function mapRawgGame(game: RawgGame): CatalogueGame {
     source: 'rawg',
     sourceUrl: 'https://rawg.io/games/' + encodeURIComponent(game.slug ?? String(game.id)),
     screenshots: (game.short_screenshots ?? []).filter(i => !i.is_deleted).map(i => i.image).filter((i): i is string => !!i).slice(0, 8),
+    popularity: rawgPopularity(game),
   };
 }
 /**
@@ -146,29 +148,117 @@ function rawgPopularity(game: RawgGame): number {
   return added + ratings * 0.25;
 }
 
-export async function searchRawg(query: string, proxy: string, signal?: AbortSignal, includeExtras = false): Promise<CatalogueGame[]> {
-  if (!proxy) throw new Error('Connect your RAWG Worker in Settings first.');
-  const url = new URL(proxy + '/games');
-  url.searchParams.set('search', query.trim().slice(0, 100));
-  const response = await fetch(url, { signal });
-  if (!response.ok) {
-    if (response.status === 503) throw new Error('Your RAWG Worker needs its RAWG_API_KEY secret configured.');
-    throw new Error('RAWG search failed (' + response.status + '). Check your Worker URL and credentials.');
-  }
-  const data = await response.json() as { results?: RawgGame[] };
-  return (data.results ?? [])
-    .filter((game): game is RawgGame => typeof game.id === 'number' && game.id > 0 && typeof game.name === 'string' && game.name.trim().length > 0)
-    .filter(game => includeExtras || !isPeripheralExtra(game.name!))
-    .sort((a, b) => {
-      const aRelevance = searchPriority(a.name!, query);
-      const bRelevance = searchPriority(b.name!, query);
-      return relevanceBand(bRelevance) - relevanceBand(aRelevance)
-        || rawgPopularity(b) - rawgPopularity(a)
-        || bRelevance - aRelevance
-        || a.name!.localeCompare(b.name!);
-    })
-    .map(mapRawgGame);
+
+/** Common shorthand and popular games that ambiguous keywords should find. */
+const ALIASES: Record<string,string> = {
+  'rivals':'marvel rivals','mrivals':'marvel rivals',
+  'kcd':'kingdom come deliverance','kcd1':'kingdom come deliverance',
+  'kcd2':'kingdom come deliverance 2','rdr':'red dead redemption',
+  'rdr2':'red dead redemption 2','gta':'grand theft auto',
+  'gta5':'grand theft auto v','gta v':'grand theft auto v',
+  'gta6':'grand theft auto vi','cp2077':'cyberpunk 2077',
+  'cyberpunk':'cyberpunk 2077','fo4':'fallout 4','fnv':'fallout new vegas',
+  'bg3':'baldurs gate 3','baldurs gate':'baldurs gate 3',
+  'gow':'god of war','gowr':'god of war ragnarok',
+  'got':'ghost of tsushima','sot':'sea of thieves',
+  'lol':'league of legends','val':'valorant','cod':'call of duty',
+  'bo6':'call of duty black ops 6','mw3':'call of duty modern warfare iii',
+  'ac shadows':'assassins creed shadows','ac odyssey':'assassins creed odyssey',
+  'ac origins':'assassins creed origins','tw3':'the witcher 3',
+  'witcher 3':'the witcher 3 wild hunt','ds3':'dark souls iii',
+  'er':'elden ring','mc':'minecraft','hl':'hogwarts legacy',
+  'hzd':'horizon zero dawn','hfw':'horizon forbidden west',
+  'spiderman 2':'marvels spider man 2',
+};
+const COMMON_WORDS = [
+  'marvel','rivals','kingdom','come','deliverance','red','dead','redemption','grand',
+  'theft','auto','cyberpunk','fallout','elden','ring','assassins','creed',
+  'minecraft','baldurs','gate','witcher','horizon','ghost','tsushima',
+  'battlefield','resident','evil','monster','hunter','spider','star','wars',
+  'legacy','duty','modern','warfare','black','ops','phantom','liberty',
+  'shadow','erdtree','ragnarok','fortnite','overwatch','bloodborne',
+];
+function normalizedSearch(value: string): string {
+  return value.toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9]+/g,' ').trim().replace(/\s+/g,' ');
 }
+/** Conservative correction for tiny typos in recognisable game terms. */
+function editDistanceAtMostTwo(a: string, b: string): number {
+  if (Math.abs(a.length-b.length)>2) return 3;
+  const previous = Array.from({length:b.length+1},(_,i)=>i);
+  for(let i=1;i<=a.length;i++){
+    const current = [i];
+    for(let j=1;j<=b.length;j++)
+      current[j]=Math.min(current[j-1]+1,previous[j]+1,
+        previous[j-1]+(a[i-1]===b[j-1]?0:1));
+    for(let j=0;j<current.length;j++)previous[j]=current[j];
+  }
+  return previous[b.length];
+}
+export function smartSearchExpansion(query: string): string {
+  const needle=normalizedSearch(query);
+  if(!needle)return '';
+  if(ALIASES[needle])return ALIASES[needle];
+  const corrected=needle.split(' ').map(word=>{
+    if(word.length<5||/\d/.test(word)||COMMON_WORDS.includes(word))return word;
+    const maxDist=word.length>=7?2:1;
+    const candidate=COMMON_WORDS.map(term=>({term,distance:editDistanceAtMostTwo(word,term)}))
+      .filter(row=>row.distance>0&&row.distance<=maxDist)
+      .sort((a,b)=>a.distance-b.distance||a.term.localeCompare(b.term))[0];
+    return candidate?.term??word;
+  }).join(' ');
+  return ALIASES[corrected]??corrected;
+}
+
+export async function searchRawg(query: string, proxy: string, signal?: AbortSignal, includeExtras = false, smartSearch = true): Promise<CatalogueGame[]> {
+  if(!proxy)throw Error('Connect your RAWG Worker in Settings first.');
+  const entered=query.trim().slice(0,100);
+  const expanded=smartSearch?smartSearchExpansion(entered):entered;
+  // At most two RAWG calls: expand abbreviations/typos, also try literal title.
+  const queries=[expanded,entered].filter((q,i,all)=>q.length>=2&&all.findIndex(t=>normalizedSearch(t)===normalizedSearch(q))===i).slice(0,2);
+  const fetchMatches=async(term:string):Promise<RawgGame[]>=>{
+    const url=new URL(proxy+'/games');url.searchParams.set('search',term);
+    const response=await fetch(url,{signal});
+    if(!response.ok){
+      if(response.status===503)throw Error('RAWG Worker needs its RAWG_API_KEY secret.');
+      throw Error('RAWG search failed ('+response.status+'). Check the Worker connection.');
+    }
+    const data=await response.json() as {results?:RawgGame[]};
+    return data.results??[];
+  };
+  const outcomes=await Promise.allSettled(queries.map(fetchMatches));
+  if(signal?.aborted)throw new DOMException('Aborted','AbortError');
+  const successes=outcomes.filter((result):result is PromiseFulfilledResult<RawgGame[]>=>result.status==='fulfilled');
+  if(!successes.length){
+    const failed=outcomes.find((result):result is PromiseRejectedResult=>result.status==='rejected');
+    throw failed?.reason instanceof Error?failed.reason:Error('Catalogue is unavailable.');
+  }
+  const unique=new Map<number,RawgGame>();
+  for(const group of successes)for(const game of group.value)
+    if(typeof game.id==='number'&&game.id>0&&typeof game.name==='string'&&game.name.trim()){
+      const previous=unique.get(game.id);
+      if(!previous||rawgPopularity(game)>rawgPopularity(previous))unique.set(game.id,game);
+    }
+  const aliasUsed=normalizedSearch(expanded)!==normalizedSearch(entered);
+  return [...unique.values()]
+    .filter(g=>includeExtras||!isPeripheralExtra(g.name!))
+    .sort((a,b)=>{
+      const aTarget=searchPriority(a.name!,expanded),bTarget=searchPriority(b.name!,expanded);
+      const aOriginal=searchPriority(a.name!,entered),bOriginal=searchPriority(b.name!,entered);
+      // "rivals" resolves to Marvel Rivals, not a less popular literal "Rivals".
+      if(aliasUsed){
+        const aPreferred=aTarget===100?2:aTarget>=78?1:0;
+        const bPreferred=bTarget===100?2:bTarget>=78?1:0;
+        if(aPreferred!==bPreferred)return bPreferred-aPreferred;
+      }
+      const aBand=Math.max(relevanceBand(aTarget),relevanceBand(aOriginal));
+      const bBand=Math.max(relevanceBand(bTarget),relevanceBand(bOriginal));
+      return bBand-aBand||rawgPopularity(b)-rawgPopularity(a)
+        ||Math.max(bTarget,bOriginal)-Math.max(aTarget,aOriginal)
+        ||a.name!.localeCompare(b.name!);
+    }).slice(0,30).map(mapRawgGame);
+}
+
 export async function fetchRawgScreenshots(gameId: string, proxy: string, signal?: AbortSignal): Promise<string[]> {
   const id = gameId.replace(/^rawg:/, '');
   if (!/^\d+$/.test(id) || !proxy) return [];
