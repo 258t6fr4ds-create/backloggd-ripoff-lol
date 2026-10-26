@@ -17,6 +17,24 @@ export interface Release {
  */
 export const RELEASE_NOTES: Release[] = [
   {
+    version: '1.7.0',
+    date: '2026-10-26',
+    title: 'The visual overhaul.',
+    summary: 'A more cinematic gaming library with richer game art, elegant profiles, flexible browsing and custom synced shelves.',
+    changes: [
+      { type: 'Improved', text: 'Overhauled the graphite-and-slate design with more cohesive typography, spacious cards, muted blue highlights and refined surfaces.' },
+      { type: 'Improved', text: 'Game covers now appear in cinematic artwork tiles with ratings, polished status chips, favourites and optional shelf labels.' },
+      { type: 'Improved', text: 'Game details have a cinematic banner using your saved screenshot or image, with a more immersive cover, actions and metadata layout.' },
+      { type: 'Added', text: 'Library grid and compact list views, with the view preference remembered on the device.' },
+      { type: 'Added', text: 'Custom library shelves saved within each game record, viewable as library tabs and editable on the game form.' },
+      { type: 'Added', text: 'Bulk library management: select games, assign or remove a named shelf, or change statuses together.' },
+      { type: 'Added', text: 'Library filtering by personal platform and favourites alongside the existing title, status and sort controls.' },
+      { type: 'Improved', text: 'The mobile layout includes a two-column media grid, scrollable shelf chips, narrower controls and more accessible game profile content.' },
+      { type: 'Fixed', text: 'Updated offline app cache version for the release while preserving game data and existing homescreen app installation.' },
+    ],
+  },
+
+  {
     version: '1.6.0',
     date: '2026-10-26',
     title: 'Insights and better next-game picks.',

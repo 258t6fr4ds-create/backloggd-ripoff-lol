@@ -2,6 +2,28 @@
 
 All meaningful app updates receive dated, versioned patch notes. These match the in-app **What's New** panel. Entries list changes actually shipped, never planned features.
 
+## [1.7.0] — 2026-10-26
+**The visual overhaul.**
+
+### Design
+- Redesigned GameVault's slate/graphite visual system while retaining its minimalist identity. More cohesive type, borders, accent colours, hover states and surfaces.
+- Cinematic home hero using cover artwork from a saved currently-playing, favourite, or other library game, with a safe fallback.
+- Richer game tiles featuring wide artwork, better imagery cropping, saved ratings, favourites, status and shelf metadata.
+- Immersive game profiles with backdrop images drawn from existing screenshots or covers, while preserving all existing DLC, journal and playthrough content.
+- Mobile-first styles for iPhone screens, responsive grids, safe-area navigation and low-clutter controls. Respects reduced-motion settings.
+
+### Library experience
+- Switch between media-grid and compact-list browsing layouts; the preference is stored locally.
+- Create your own named shelves by editing a game or selecting multiple library entries.
+- Shelf chips across Library allow one-tap filtering, with platform, favourites, status, title search and sorting available together.
+- Multi-select games to add/remove a custom shelf or set their game status in one bulk change.
+- Shelves are stored directly inside GameVault game records, in optional `shelves` metadata, so they are preserved in JSON backup and Supabase cloud sync.
+
+### Compatibility
+- No schema migration, SQL updates, new Worker endpoint, paid services or reset required.
+- Existing game metadata, artwork, platform, DLC, journal and playthrough histories remain intact.
+- Bumped app's service worker cache identifier so newly deployed assets replace older cached resources; no reinstall needed.
+
 ## [1.6.0] — 2026-10-26
 **Insights and better next-game picks.**
 

@@ -17,6 +17,15 @@ Every release must have complete notes in **both** the app's **What's New** pane
 
 The app always displays the current version and a **What's New** history, with an unread marker per browser until the latest entry is viewed. The notes remain available after the user's ChatGPT subscription ends.
 
+## v1.7.0 — Cinematic visual refresh and custom shelves
+
+- Refined slate/graphite theme, wide game-art cards, cinematic details, home spotlight, improved typography, accessible contrast, mobile-safe spacing and reduced-motion support.
+- Library grid/list toggle (stored locally), scrollable shelf tabs, filter by favourites and personally chosen platform in addition to title/status/sorting.
+- Create a custom shelf by editing a game → **Custom shelves** (comma-separated), or Library → **Manage games** → select titles → enter a shelf name → Add to shelf. Remove shelves or bulk-update statuses in the same panel.
+- Custom shelves are optional labels in existing game records, so they sync and export with your game collection. They do not duplicate games or alter DLC and playthrough data.
+- The redesign reuses stored RAWG artwork and screenshots. It neither generates fake game art nor requires extra API services.
+- No Cloudflare Worker, Supabase schema, account or installed homescreen app changes needed.
+
 ## v1.6.0 — Personal insights and discovery
 
 - Discover offers **For your taste**, **Recently added**, **Overlooked** and **Something different**. Recommendations only consider your own Backlog and On hold games. Taste matching uses explicitly rated (7+/10) or favourited genres, with clear explanations and fallbacks when your library has little preference data.
