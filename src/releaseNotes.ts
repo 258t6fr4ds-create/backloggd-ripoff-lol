@@ -17,6 +17,21 @@ export interface Release {
  */
 export const RELEASE_NOTES: Release[] = [
   {
+    version: '1.4.1',
+    date: '2026-10-26',
+    title: 'DLC that actually belongs to the game.',
+    summary: 'Direct RAWG DLC relationships, cleaner add-on browsing and batch attachment from game profiles.',
+    changes: [
+      { type: 'Added', text: 'Use the dedicated RAWG additions endpoint to discover expansions associated with a specific game, rather than guessing from a text search.' },
+      { type: 'Improved', text: 'DLC browsing groups likely expansions separately from editions, bundles and non-game extras.' },
+      { type: 'Added', text: 'Add individual add-ons or select several to attach to a parent game at once; already linked DLC is excluded.' },
+      { type: 'Improved', text: 'Browse related DLC directly inside Library game details and from an existing game catalogue preview.' },
+      { type: 'Improved', text: 'Clear explanation when the optional Cloudflare Worker is still on its older version, with manual search available as a fallback.' },
+      { type: 'Fixed', text: 'DLC browsing no longer requires typing a parent game title into a generic catalogue search when related additions are available.' },
+    ],
+  },
+
+  {
     version: '1.4.0',
     date: '2026-10-26',
     title: 'Smarter discovery and DLC collections.',

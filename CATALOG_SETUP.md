@@ -32,3 +32,19 @@ At this stage, screenshot galleries accept direct HTTPS image links that you ent
 ## Backups and compatibility
 
 GameVault v1.2.0 adds optional screenshot, description and attribution metadata to existing game records. IndexedDB records from v0.1.1 are not discarded or migrated destructively. JSON backups preserve all optional new metadata. Back up your library periodically.
+
+
+## v1.4.1 — Enable RAWG-linked DLC and editions (one-time Worker update)
+
+RAWG has a dedicated `GET /games/{id}/additions` endpoint that lists add-ons related to a particular base game. It can contain DLC, GOTY editions, bundles, companion apps and other additions. GameVault sorts these into tentative groups and lets you choose what to track.
+
+**The GitHub Pages site update does not automatically redeploy your Cloudflare Worker.** Update your existing Worker once:
+
+1. Open [Cloudflare dashboard](https://dash.cloudflare.com/), select **Workers & Pages**, and open your existing **gamevault-rawg** Worker.
+2. Choose **Edit code** (or **Quick edit**, depending on Cloudflare's current UI).
+3. In a second tab, open [worker/index.js](worker/index.js) in this repository on `main`, copy its entire JavaScript contents, and replace the old Worker source in the Cloudflare editor.
+4. Click **Deploy** or **Save and deploy**. Leave the existing `RAWG_API_KEY` secret and `ALLOWED_ORIGIN` variable untouched.
+5. Test the existing public Worker URL by visiting `https://YOUR-WORKER.workers.dev/games/3328/additions` in a browser. `3328` is an example RAWG game ID. A successful endpoint returns JSON with a `results` array (it may be empty); an HTTP 404 indicates the old code remains deployed. Do not append the RAWG API key to the URL.
+6. Open GameVault → Library → a RAWG-imported game → **Expansions & DLC → Browse RAWG**. The related additions appear, with editions and other extras grouped separately. No new Worker URL or Supabase settings are needed.
+
+The add-on browser fetches only when opened, never automatically attaches anything, preserves all previously linked DLC and allows **Search manually instead** as a fallback.

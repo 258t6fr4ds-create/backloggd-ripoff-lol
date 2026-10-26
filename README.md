@@ -17,6 +17,14 @@ Every release must have complete notes in **both** the app's **What's New** pane
 
 The app always displays the current version and a **What's New** history, with an unread marker per browser until the latest entry is viewed. The notes remain available after the user's ChatGPT subscription ends.
 
+## v1.4.1 — Actual DLC relationships via RAWG
+
+- Open a saved game's detail panel → **Expansions & DLC → Browse RAWG**. This uses the dedicated RAWG `/games/{game_pk}/additions` route and groups expansions separately from editions/bundles and miscellaneous extras.
+- From a RAWG game's catalogue preview, the same browser is available if that game is already in your GameVault library.
+- Choose and attach individual add-ons, or select several and add in one operation. Existing linked DLC records and owned toggles remain intact. **Search manually instead** remains available.
+- RAWG additions are broader than just DLC: lists may include editions and companion apps. Groups are heuristic labels; the user chooses what to link.
+- **One-time requirement:** Update your **deployed** Cloudflare Worker with the latest [worker/index.js](worker/index.js), which now forwards `/games/:id/additions` and `/games/:id/parent-games`. Existing secrets and URLs do not change. See [CATALOG_SETUP.md](CATALOG_SETUP.md). If the Worker is not yet updated, the interface explains the HTTP 404 and offers manual search.
+
 ## v1.4.0 — Smart search, DLC and batch import
 
 - RAWG's **Smart search** is enabled by default, detects common game acronyms and small typos, and handles keyword shortcuts like `rivals` → `Marvel Rivals`. The switch can be disabled in Find Game; the preference stays on the device. Searches use at most two RAWG requests.

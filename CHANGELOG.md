@@ -2,6 +2,26 @@
 
 All meaningful app updates receive dated, versioned patch notes. These match the in-app **What's New** panel. Entries list changes actually shipped, never planned features.
 
+## [1.4.1] — 2026-10-26
+**DLC that actually belongs to the game.**
+
+### Added
+- Related DLC and editions browser, directly inside each RAWG-linked game profile and inside saved-game catalogue previews.
+- RAWG's real `/games/{id}/additions` endpoint replaces guessed title-matching for related add-ons, with one-request lazy loading.
+- Grouping into **Likely DLC & expansions**, **Other editions & bundles**, and an optionally expanded **Other extras** section.
+- One-click attachment or selection of multiple additions, skipping any already linked.
+
+### Improved
+- The existing DLC inventory and owned/unowned controls remain in place.
+- Dedicated manual-search fallback for titles not linked by RAWG.
+- Clear messaging if an old Cloudflare Worker returns HTTP 404 for DLC endpoints.
+
+**Required step:** Update the deployed Cloudflare Worker script with the revised `worker/index.js` from this repository. The GitHub Pages application can deploy automatically; your personal Cloudflare Worker does not deploy from GitHub automatically. The stored `RAWG_API_KEY` secret and `ALLOWED_ORIGIN` variable are reused unchanged.
+
+**Limitations:** RAWG's additions endpoint includes editions, bundles and companion apps as well as actual DLC; labels are conservative best-effort filters, and the displayed page includes up to 40 RAWG additions. Results are user-reviewed and never automatically added.
+
+**Data safety:** No IndexedDB version or cloud database migration; existing DLC records, games, backups and account details remain compatible.
+
 ## [1.4.0] — 2026-10-26
 **Smarter discovery and DLC collections.**
 
