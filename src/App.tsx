@@ -3,7 +3,7 @@ import type { ChangeEvent, FormEvent, ReactNode } from 'react';
 import {
   ArrowDownToLine, ArrowLeft, ArrowRight, BarChart3, BookOpen, Check,
   ChevronDown, Clock3, Compass, Download, Filter, Gamepad2, Heart,
-  Home, LayoutGrid, Library, Menu, MoreHorizontal, Pencil, Plus,
+  Home, LayoutGrid, List, Library, Menu, MoreHorizontal, Pencil, Plus,
   RefreshCw, Search, Settings2, ShieldCheck, Shuffle, SlidersHorizontal,
   Sparkles, Star, Trash2, Upload, X
 } from 'lucide-react';
@@ -51,6 +51,17 @@ function platformSummary(game: Game): string {
   return 'Available: ' + preview + (available.length > 2 ? ' +' + (available.length-2) : '');
 }
 
+function parseShelves(text:string):string[] {
+  const out:string[]=[];
+  const seen=new Set<string>();
+  for(const part of text.split(',')) {
+    const name=part.trim().replace(/\s+/g,' ').slice(0,40);
+    if(name && !seen.has(name.toLocaleLowerCase())) {out.push(name);seen.add(name.toLocaleLowerCase());}
+    if(out.length>=12)break;
+  }
+  return out;
+}
+
 function Cover({ game, className = '' }: { game: Game; className?: string }) {
   const url = safeCover(game.coverUrl);
   const [broken, setBroken] = useState(false);
@@ -71,15 +82,17 @@ function Pill({ children, tone = '' }: { children: ReactNode; tone?: string }) {
 function Empty({ icon, title, description, action }: { icon?: ReactNode; title: string; description: string; action?: ReactNode }) {
   return <div className="empty-state"><div className="empty-icon">{icon ?? <Gamepad2 size={28}/>}</div><h3>{title}</h3><p>{description}</p>{action}</div>;
 }
-function GameCard({ game, onClick }: { game: Game; onClick: () => void }) {
+function GameCard({ game, onClick, selecting = false, checked = false }: { game: Game; onClick: () => void; selecting?: boolean; checked?: boolean }) {
   return (
-    <button className="game-card" onClick={onClick} aria-label={'Open ' + game.title}>
+    <button className={'game-card'+(selecting?' game-card-selecting':'')+(checked?' game-card-checked':'')} onClick={onClick} aria-label={(selecting?(checked?'Unselect ':'Select '):'Open ') + game.title} aria-pressed={selecting?checked:undefined}>
+      {selecting&&<span className="gv-selection-check" aria-hidden="true">{checked?<Check size={18}/>:<Plus size={18}/>}</span>}
       <div className="poster">
         <Cover game={game}/>
         {game.favourite && <span className="poster-favourite" title="Favourite"><Heart size={15} fill="currentColor"/></span>}
+        {game.rating!==null&&<span className="gv-poster-rating"><Star size={12} fill="currentColor"/> {game.rating.toFixed(1)}</span>}
       </div>
       <div className="card-meta"><h3 title={game.title}>{game.title}</h3><p>{game.year || 'Year unknown'} <span>·</span> {platformSummary(game)}</p></div>
-      <div className="card-bottom"><Pill tone={'status-' + game.status}>{statusLabel[game.status]}</Pill>{(game.dlcs?.length ?? 0) > 0 && <span className="rating-small">{game.dlcs!.length} DLC</span>}{(game.playthroughs?.length ?? 0) > 0 && <span className="rating-small">{game.playthroughs!.length} runs</span>}{game.rating !== null && <span className="rating-small"><Star size={13} fill="currentColor"/> {game.rating}/10</span>}</div>
+      <div className="card-bottom"><Pill tone={'status-' + game.status}>{statusLabel[game.status]}</Pill>{(game.dlcs?.length ?? 0) > 0 && <span className="rating-small">{game.dlcs!.length} DLC</span>}{(game.playthroughs?.length ?? 0) > 0 && <span className="rating-small">{game.playthroughs!.length} runs</span>}{(game.shelves?.length??0)>0&&<span className="rating-small gv-card-shelf">{game.shelves![0]}</span>}</div>
     </button>
   );
 }
@@ -92,6 +105,7 @@ function GameForm({ initial, onClose, onSave }: {
   const [draft, setDraft] = useState<GameInput>(() => initial ? {
     title: initial.title, year: initial.year, platform: initial.platform,
     availablePlatforms: initial.availablePlatforms ?? '', genres: initial.genres,
+    shelves: initial.shelves ?? [],
     coverUrl: initial.coverUrl, description: initial.description,
     catalogId: initial.catalogId, catalogUrl: initial.catalogUrl,
     catalogSource: initial.catalogSource, screenshots: initial.screenshots ?? [],
@@ -101,12 +115,13 @@ function GameForm({ initial, onClose, onSave }: {
     playthroughs: initial.playthroughs ?? [], journal: initial.journal ?? [],
   } : { ...emptyGame });
   const [working, setWorking] = useState(false);
+  const [shelfText,setShelfText] = useState(()=>(initial?.shelves??[]).join(', '));
   const set = <K extends keyof GameInput>(key: K, value: GameInput[K]) => setDraft(d => ({ ...d, [key]: value }));
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     if (!draft.title.trim()) return;
     setWorking(true);
-    try { if (await onSave({ ...draft, title: draft.title.trim() })) onClose(); }
+    try { if (await onSave({ ...draft, title: draft.title.trim(), shelves:parseShelves(shelfText) })) onClose(); }
     finally { setWorking(false); }
   };
   return (
@@ -123,6 +138,7 @@ function GameForm({ initial, onClose, onSave }: {
             <label className="field">Your rating (0–10) <input type="number" min="0" max="10" step="0.5" placeholder="Unrated" value={draft.rating ?? ''} onChange={e => set('rating', e.target.value === '' ? null : Number(e.target.value))}/></label>
             <label className="field">Hours played <input type="number" min="0" max="1000000" step="0.1" value={draft.hours} onChange={e => set('hours', e.target.value === '' ? 0 : Number(e.target.value))}/></label>
             <label className="field span-2">Genres <input maxLength={240} placeholder="RPG, Open World, Adventure" value={draft.genres} onChange={e => set('genres', e.target.value)}/><span className="field-help">Separate genres with commas.</span></label>
+            <label className="field span-2">Custom shelves <input maxLength={500} placeholder="Physical collection, Favourites, Co-op…" value={shelfText} onChange={e=>setShelfText(e.target.value)}/><span className="field-help">Optional. Separate shelf names with commas; up to 12 per game. Your shelves travel with your cloud backup.</span></label>
             <label className="field span-2">Cover image URL <input type="url" maxLength={2048} placeholder="https://... (real artwork only)" value={draft.coverUrl} onChange={e => set('coverUrl', e.target.value)}/><span className="field-help">Optional. Paste a direct image link; no AI-generated artwork.</span></label>
             <label className="field span-2">Gameplay screenshot URLs <textarea rows={3} placeholder={'https://example.com/screenshot-1.jpg\nhttps://example.com/screenshot-2.jpg'} value={(draft.screenshots ?? []).join('\n')} onChange={e => set('screenshots', e.target.value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean).slice(0,40))}/><span className="field-help">One direct image URL per line. Use your own captures or images you have permission to link to. Images are linked, not uploaded.</span></label>
             <label className="field">Completion date <input type="date" value={draft.completedAt} onChange={e => set('completedAt', e.target.value)}/></label>
@@ -146,6 +162,18 @@ export default function App() {
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [sort, setSort] = useState<Sort>('recent');
+  const [shelfFilter,setShelfFilter] = useState('all');
+  const [platformFilter,setPlatformFilter] = useState('all');
+  const [favouritesOnly,setFavouritesOnly] = useState(false);
+  const [libraryView,setLibraryView] = useState<'grid'|'list'>(() => {
+    try {return localStorage.getItem('gamevault:libraryView')==='list'?'list':'grid';}
+    catch{return 'grid';}
+  });
+  const [bulkMode,setBulkMode] = useState(false);
+  const [selectedBulk,setSelectedBulk] = useState<string[]>([]);
+  const [newShelfName,setNewShelfName] = useState('');
+  const [bulkStatus,setBulkStatus] = useState<GameStatus>('backlog');
+  const [bulkBusy,setBulkBusy] = useState(false);
   const [editing, setEditing] = useState<Game | 'new' | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
@@ -215,6 +243,10 @@ export default function App() {
   }, [editing, selectedId, showSettings, showPatchNotes, showCatalogue, showCloud]);
 
   const selected = games.find(g => g.id === selectedId) ?? null;
+  const shelfNames = [...new Map(games.flatMap(g=>g.shelves??[])
+    .map(s=>[s.toLocaleLowerCase(),s] as const)).values()].sort((a,b)=>a.localeCompare(b));
+  const ownedPlatforms=[...new Set(games.map(g=>g.platform.trim()).filter(Boolean))]
+    .sort((a,b)=>a.localeCompare(b));
   const collection = games.filter(g => g.status !== 'wishlist');
   const wishlist = games.filter(g => g.status === 'wishlist');
   const playing = collection.filter(g => g.status === 'playing').sort((a,b) => b.updatedAt.localeCompare(a.updatedAt));
@@ -229,7 +261,9 @@ export default function App() {
     const filtered = games.filter(g => {
       const matchesText = !lower || [g.title, g.genres, g.platform, g.notes].some(s => s.toLowerCase().includes(lower));
       const matchesStatus = statusFilter === 'all' || statusFilter === g.status;
-      return matchesText && matchesStatus;
+      const matchesShelf = shelfFilter === 'all' || (g.shelves??[]).some(s=>s.toLocaleLowerCase()===shelfFilter.toLocaleLowerCase());
+      const matchesPlatform = platformFilter==='all' || g.platform===platformFilter;
+      return matchesText && matchesStatus && matchesShelf && matchesPlatform && (!favouritesOnly || g.favourite);
     });
     return [...filtered].sort((a,b) => {
       if (sort === 'title') return a.title.localeCompare(b.title);
@@ -238,8 +272,53 @@ export default function App() {
       if (sort === 'year') return (b.year ?? 0) - (a.year ?? 0) || a.title.localeCompare(b.title);
       return b.updatedAt.localeCompare(a.updatedAt);
     });
-  }, [games, query, statusFilter, sort]);
+  }, [games, query, statusFilter, sort, shelfFilter, platformFilter, favouritesOnly]);
 
+
+  function toggleBulk(id:string) {
+    setSelectedBulk(old=>old.includes(id)?old.filter(x=>x!==id):[...old,id]);
+  }
+  function selectVisibleBulk() {
+    const visible=sortedLibrary.map(g=>g.id);
+    setSelectedBulk(old=>[...new Set([...old,...visible])]);
+  }
+  function changeLibraryView(mode:'grid'|'list') {
+    setLibraryView(mode);
+    try{localStorage.setItem('gamevault:libraryView',mode);}catch{ /* keeps session preference */ }
+  }
+  async function applyBulkUpdate(action:'addShelf'|'removeShelf'|'status') {
+    if(bulkBusy||!selectedBulk.length)return;
+    const name=newShelfName.trim().replace(/\s+/g,' ').slice(0,40);
+    if(action!=='status' && !name) {setNotice('Enter the shelf name to add or remove.');return;}
+    const selectedSet=new Set(selectedBulk);
+    const matched=games.filter(g=>selectedSet.has(g.id));
+    const now=new Date().toISOString();
+    const updates=matched.map(g=>{
+      if(action==='status')return {...g,status:bulkStatus,updatedAt:now};
+      const existing=g.shelves??[];
+      const shelves=action==='addShelf'
+        ? existing.some(s=>s.toLocaleLowerCase()===name.toLocaleLowerCase())?existing:[...existing,name].slice(0,12)
+        : existing.filter(s=>s.toLocaleLowerCase()!==name.toLocaleLowerCase());
+      return {...g,shelves,updatedAt:now};
+    }).filter(g=>{
+      const previous=games.find(original=>original.id===g.id);
+      return previous && (action==='status'?previous.status!==g.status:JSON.stringify(previous.shelves??[])!==JSON.stringify(g.shelves??[]));
+    });
+    if(!updates.length){setNotice('Nothing changed for those games.');return;}
+    setBulkBusy(true);
+    try{
+      await mergeGames(updates);
+      for(const game of updates)await recordPending(game,game.id);
+      const replacements=new Map(updates.map(g=>[g.id,g]));
+      setGames(prev=>prev.map(g=>replacements.get(g.id)??g));
+      setSelectedBulk([]);
+      setBulkMode(false);
+      setNotice('Updated '+updates.length+' game'+(updates.length===1?'':'s')+'. Changes will sync with your library.');
+    }catch(e) {
+      setGames(await loadGames().catch(()=>games));
+      setNotice('Some changes may have saved locally; check Cloud Sync and retry: '+String(e));
+    }finally{setBulkBusy(false);}
+  }
   async function persist(input: GameInput): Promise<boolean> {
     const now = new Date().toISOString();
     const old = typeof editing === 'object' && editing !== null ? games.find(g => g.id === editing.id) : undefined;
@@ -495,8 +574,12 @@ export default function App() {
             <>
               {page === 'home' && <>
                 <section className="hero">
-                  <div className="hero-copy"><div className="eyebrow eyebrow-light"><span className="live-dot"/> YOUR PERSONAL GAMING HQ</div><h1>Your games.<br/><em>All in one place.</em></h1><p>Track what you love. Remember what you played. Find what's next.</p><div className="hero-actions">{searchAction}<button className="btn btn-outline-light" onClick={() => setEditing('new')}>Add manually <Plus size={17}/></button></div></div>
-                  <div className="hero-illustration" aria-hidden="true"><div className="hero-orbit orbit-one"/><div className="hero-orbit orbit-two"/><Gamepad2 size={134} strokeWidth={0.85}/></div>
+                  <div className="hero-copy"><div className="eyebrow eyebrow-light"><span className="live-dot"/> YOUR PERSONAL GAMING HQ</div><h1>Your games.<br/><em>All in one place.</em></h1><p>Track the worlds you love. Build a library worth exploring.</p><div className="hero-actions">{searchAction}<button className="btn btn-outline-light" onClick={() => setEditing('new')}>Add manually <Plus size={17}/></button></div></div>
+                  <div className="hero-illustration" aria-hidden="true">
+                    {(playing[0]??favourites[0]??collection[0])?.coverUrl&&safeCover((playing[0]??favourites[0]??collection[0]).coverUrl)
+                      ? <img className="gv-hero-art" src={(playing[0]??favourites[0]??collection[0]).coverUrl} alt=""/>
+                      : <><div className="hero-orbit orbit-one"/><div className="hero-orbit orbit-two"/><Gamepad2 size={134} strokeWidth={0.85}/></>}
+                  </div>
                 </section>
                 <div className="stat-grid">
                   <StatCard icon={<Library size={18}/>} value={String(collection.length)} label="Games in library"/>
@@ -513,12 +596,44 @@ export default function App() {
               </>}
               {page === 'library' && <>
                 <div className="page-heading"><div><span className="eyebrow">ALL YOUR GAMES</span><h1>Your library<span className="heading-count">{games.length}</span></h1><p>Every adventure, all in one place.</p></div><div className="library-actionrow">{searchAction}{action}</div></div>
-                <div className="filterbar">
-                  <div className="search-field"><Search size={18}/><input aria-label="Search games" placeholder="Search titles, genres, notes..." value={query} onChange={e => setQuery(e.target.value)}/>{query && <button aria-label="Clear search" onClick={() => setQuery('')}><X size={16}/></button>}</div>
+                <div className="gv-shelf-row" aria-label="Library shelves">
+                  <button className={shelfFilter==='all'?'active':''} onClick={()=>setShelfFilter('all')} aria-pressed={shelfFilter==='all'}>All games <span>{games.length}</span></button>
+                  {shelfNames.map(name=><button key={name} aria-pressed={shelfFilter===name} className={shelfFilter.toLocaleLowerCase()===name.toLocaleLowerCase()?'active':''}
+                    onClick={()=>setShelfFilter(name)}>{name} <span>{games.filter(g=>(g.shelves??[]).some(s=>s.toLocaleLowerCase()===name.toLocaleLowerCase())).length}</span></button>)}
+                </div>
+                <div className="filterbar gv-filterbar">
+                  <div className="search-field"><Search size={18}/><input aria-label="Search games" placeholder="Search titles, genres, notes…" value={query} onChange={e => setQuery(e.target.value)}/>{query && <button aria-label="Clear search" onClick={() => setQuery('')}><X size={16}/></button>}</div>
                   <label className="select-wrap"><Filter size={16}/><select aria-label="Filter by status" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}><option value="all">All statuses</option>{STATUSES.map(s => <option key={s} value={s}>{statusLabel[s]}</option>)}</select><ChevronDown size={15}/></label>
+                  <label className="select-wrap"><Gamepad2 size={15}/><select aria-label="Filter by owned platform" value={platformFilter} onChange={e=>setPlatformFilter(e.target.value)}><option value="all">All platforms</option>{ownedPlatforms.map(p=><option key={p} value={p}>{p}</option>)}</select><ChevronDown size={15}/></label>
                   <label className="select-wrap"><SlidersHorizontal size={16}/><select aria-label="Sort games" value={sort} onChange={e => setSort(e.target.value as Sort)}><option value="recent">Recently updated</option><option value="title">Title A–Z</option><option value="rating">Top rated</option><option value="hours">Most played</option><option value="year">Newest release</option></select><ChevronDown size={15}/></label>
                 </div>
-                <div className="results-line">{sortedLibrary.length} {sortedLibrary.length === 1 ? 'game' : 'games'} found</div>
+                <div className="gv-library-toolbar">
+                  <button className={'gv-favourites-filter'+(favouritesOnly?' active':'')} aria-pressed={favouritesOnly} onClick={()=>setFavouritesOnly(v=>!v)}><Heart size={16} fill={favouritesOnly?'currentColor':'none'}/> Favourites</button>
+                  <span className="gv-library-counter">{sortedLibrary.length} {sortedLibrary.length===1?'game':'games'} displayed</span>
+                  <div className="gv-library-tools">
+                    <div className="gv-view-toggle" role="group" aria-label="Library layout">
+                      <button aria-label="Grid view" aria-pressed={libraryView==='grid'} className={libraryView==='grid'?'active':''} onClick={()=>changeLibraryView('grid')}><LayoutGrid size={17}/></button>
+                      <button aria-label="List view" aria-pressed={libraryView==='list'} className={libraryView==='list'?'active':''} onClick={()=>changeLibraryView('list')}><List size={17}/></button>
+                    </div>
+                    <button className={'gv-manage-button'+(bulkMode?' active':'')} aria-pressed={bulkMode} onClick={()=>{setBulkMode(v=>!v);setSelectedBulk([]);}}>
+                      <Check size={15}/>{bulkMode?'Finish selecting':'Manage games'}
+                    </button>
+                  </div>
+                </div>
+                {bulkMode&&<div className="gv-bulk-toolbar">
+                  <div className="gv-bulk-head"><strong>{selectedBulk.length} selected</strong><button onClick={selectVisibleBulk}>Select visible</button><button onClick={()=>setSelectedBulk([])}>Clear</button></div>
+                  <div className="gv-bulk-controls">
+                    <label>Shelf name <input aria-label="Shelf name for bulk changes" placeholder="e.g. Co-op nights" value={newShelfName} maxLength={40} onChange={e=>setNewShelfName(e.target.value)}/></label>
+                    <button disabled={bulkBusy||!selectedBulk.length} onClick={()=>void applyBulkUpdate('addShelf')}>Add to shelf</button>
+                    <button disabled={bulkBusy||!selectedBulk.length} onClick={()=>void applyBulkUpdate('removeShelf')}>Remove from shelf</button>
+                    <label>Status <select aria-label="Bulk status" value={bulkStatus} onChange={e=>setBulkStatus(e.target.value as GameStatus)}>
+                      {STATUSES.map(value=><option value={value} key={value}>{statusLabel[value]}</option>)}
+                    </select></label>
+                    <button disabled={bulkBusy||!selectedBulk.length} onClick={()=>void applyBulkUpdate('status')}>{bulkBusy?'Saving…':'Set status'}</button>
+                  </div>
+                  <p>Shelves are labels stored with each game, so they sync and export with your library. Bulk updates won't delete games or change their ratings.</p>
+                </div>}
+ 
                 {games.some(g=>/^rawg:\d+$/.test(g.catalogId??'')&&!g.availablePlatforms?.trim())&&
                   <div className="platform-refresh-banner">
                     <div><strong>Missing supported-platform information?</strong><p>Older RAWG imports didn't save platform availability. Refresh up to 25 per batch without changing your personal platform.</p>
@@ -528,7 +643,17 @@ export default function App() {
                       <RefreshCw size={16} className={platformRefresh.busy?'spin':''}/>{platformRefresh.busy?'Checking…':'Fill missing platforms'}
                     </button>
                   </div>}
-                {sortedLibrary.length ? renderCards(sortedLibrary) : games.length ? <Empty icon={<Search size={28}/>} title="No games match" description="Try changing the search or filters." action={<button className="btn btn-subtle" onClick={() => {setQuery('');setStatusFilter('all');}}>Clear filters</button>}/> : <Empty title="Your library starts here" description="Add your first game. Your collection will stay saved on this device." action={<button className="btn btn-primary" onClick={() => setShowCatalogue(true)}><Search size={17}/> Find first game</button>}/>}
+                {sortedLibrary.length ?
+                  <div className={'game-grid gv-library-results'+(libraryView==='list'?' gv-library-list':'')}>
+                    {sortedLibrary.map(g=><GameCard key={g.id} game={g} selecting={bulkMode}
+                      checked={selectedBulk.includes(g.id)}
+                      onClick={()=>bulkMode?toggleBulk(g.id):setSelectedId(g.id)}/>)}
+                  </div> : games.length ?
+                  <Empty icon={<Search size={28}/>} title="No matching games" description="Try adjusting the shelf, platform or search filters."
+                    action={<button className="btn btn-subtle" onClick={()=>{setQuery('');setStatusFilter('all');setShelfFilter('all');setPlatformFilter('all');setFavouritesOnly(false);}}>Clear filters</button>}/> :
+                  <Empty title="Your library starts here" description="Find your first game and make GameVault your own."
+                    action={<button className="btn btn-primary" onClick={()=>setShowCatalogue(true)}><Search size={17}/> Find first game</button>}/>}
+                {shelfNames.length===0&&games.length>0&&!bulkMode&&<p className="gv-shelf-hint">Want custom shelves? Select <strong>Manage games</strong> to organise several games at once, or add shelf names when editing a game.</p>}
               </>}
               {page === 'discover' && <>
                 <div className="page-heading"><div><span className="eyebrow">YOUR NEXT ADVENTURE</span><h1>Discover</h1><p>Find your next game from your own backlog, with recommendations that explain why.</p></div></div>
@@ -574,7 +699,11 @@ export default function App() {
       {selected && <div className="modal-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) setSelectedId(null); }}>
         <section className="modal detail-modal" role="dialog" aria-modal="true" aria-label={'Details for ' + selected.title}>
           <header className="modal-heading"><button className="icon-text" onClick={() => setSelectedId(null)}><ArrowLeft size={18}/> Back to library</button><button className="icon-btn" onClick={() => setSelectedId(null)} aria-label="Close"><X size={20}/></button></header>
-          <div className="detail-main"><Cover game={selected} className="detail-cover"/><div className="detail-copy"><span className="eyebrow">{selected.platform ? 'YOUR PLATFORM: ' + selected.platform : 'PLATFORM NOT SET'}{selected.year ? ' / ' + selected.year : ''}</span><h2>{selected.title}</h2><div className="detail-pills"><Pill tone={'status-'+selected.status}>{statusLabel[selected.status]}</Pill><Pill>{ownershipLabel[selected.ownership]}</Pill>{selected.favourite && <Pill><Heart size={12} fill="currentColor"/> Favourite</Pill>}</div><p className="detail-genres">{selected.genres || 'No genres added yet'}</p>{selected.availablePlatforms && <p className="detail-available-platforms"><strong>Available on (RAWG):</strong> {selected.availablePlatforms}</p>}<div className="detail-actions"><button className="btn btn-primary" onClick={() => { setEditing(selected); setSelectedId(null); }}><Pencil size={16}/> Edit game</button><button className="btn btn-subtle" onClick={() => patchGame(selected,{favourite: !selected.favourite})}><Heart size={16} fill={selected.favourite ? 'currentColor' : 'none'}/> {selected.favourite ? 'Unfavourite' : 'Favourite'}</button></div></div></div>
+          {safeCover(selected.screenshots?.[0]??'') || safeCover(selected.coverUrl) ? <div className="gv-detail-banner" aria-hidden="true">
+            <img src={safeCover(selected.screenshots?.[0]??'')||safeCover(selected.coverUrl)} alt=""/>
+          </div> : <div className="gv-detail-banner gv-detail-banner-fallback" aria-hidden="true"><Gamepad2 size={72}/></div>}
+          <div className="detail-main"><Cover game={selected} className="detail-cover"/><div className="detail-copy"><span className="eyebrow">{selected.platform ? 'YOUR PLATFORM: ' + selected.platform : 'PLATFORM NOT SET'}{selected.year ? ' / ' + selected.year : ''}</span><h2>{selected.title}</h2><div className="detail-pills"><Pill tone={'status-'+selected.status}>{statusLabel[selected.status]}</Pill><Pill>{ownershipLabel[selected.ownership]}</Pill>{selected.favourite && <Pill><Heart size={12} fill="currentColor"/> Favourite</Pill>}</div><p className="detail-genres">{selected.genres || 'No genres added yet'}</p>
+            {!!selected.shelves?.length&&<div className="gv-profile-shelves" aria-label="Custom shelves">{selected.shelves.map(s=><span key={s}>{s}</span>)}</div>}{selected.availablePlatforms && <p className="detail-available-platforms"><strong>Available on (RAWG):</strong> {selected.availablePlatforms}</p>}<div className="detail-actions"><button className="btn btn-primary" onClick={() => { setEditing(selected); setSelectedId(null); }}><Pencil size={16}/> Edit game</button><button className="btn btn-subtle" onClick={() => patchGame(selected,{favourite: !selected.favourite})}><Heart size={16} fill={selected.favourite ? 'currentColor' : 'none'}/> {selected.favourite ? 'Unfavourite' : 'Favourite'}</button></div></div></div>
           <div className="detail-stats"><div><strong>{selected.rating !== null ? selected.rating+'/10' : '—'}</strong><span>Your rating</span></div><div><strong>{fmtHours(selected.hours)}h</strong><span>Playtime logged</span></div><div><strong>{dateLabel(selected.completedAt)}</strong><span>Completed</span></div></div>
           {selected.status === 'wishlist' && selected.priceTarget !== null && <div className="note-box">Your target price: <strong>{currency(selected.priceTarget)}</strong> AUD tracking only — not a live quote.</div>}
           {selected.description && <div className="detail-description"><span className="eyebrow">ABOUT THE GAME</span><p>{selected.description}</p></div>}

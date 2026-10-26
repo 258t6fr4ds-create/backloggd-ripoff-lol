@@ -43,6 +43,7 @@ export interface Game {
   year: number | null;
   platform: string; // user-owned/played platform, never inferred from RAWG
   availablePlatforms?: string; // supported platform names listed by RAWG
+  shelves?: string[]; // user-defined synced library shelves
   genres: string;
   coverUrl: string;
   description?: string;
@@ -86,7 +87,7 @@ export const ownershipLabel: Record<Ownership, string> = {
 export const emptyGame: GameInput = {
   title: '', year: null, platform: 'PS5', genres: '', coverUrl: '',
   status: 'backlog', ownership: 'digital', rating: null, hours: 0, dlcs: [],
-  playthroughs: [], journal: [],
+  playthroughs: [], journal: [], shelves: [],
   notes: '', completedAt: '', priceTarget: null, favourite: false,
 };
 
@@ -131,6 +132,11 @@ export function normalizeGame(raw: unknown): Game | null {
     year: numberOrNull(g.year, 2200),
     platform: text('platform', 'PS5').slice(0, 60),
     availablePlatforms: text('availablePlatforms').slice(0, 600),
+    shelves: Array.isArray(g.shelves)
+      ? [...new Set(g.shelves.filter((x): x is string => typeof x==='string')
+          .map(s=>s.trim().replace(/\s+/g,' ').slice(0,40))
+          .filter(s=>s.length>0))].slice(0,12)
+      : [],
     genres: text('genres').slice(0, 240),
     coverUrl: text('coverUrl').slice(0, 2048),
     description: text('description').slice(0, 5000),
