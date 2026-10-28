@@ -107,7 +107,7 @@ export default function GameProfile({
   }
 
   const notes=game.notes.trim();
-  return <div className="modal-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)onClose();}}>
+  return <div className="modal-backdrop gv-game-profile-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)onClose();}}>
     <section className="modal detail-modal gv-profile-v18" role="dialog" aria-modal="true" aria-label={'Details for '+game.title}>
       <header className="modal-heading gv-profile-mobile-safe-header">
         <button className="icon-text gv-profile-back" onClick={onClose} aria-label="Return to library"><ArrowLeft size={19}/> Return to library</button>
