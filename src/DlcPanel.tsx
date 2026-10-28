@@ -22,6 +22,8 @@ export default function DlcPanel({
   const [selected,setSelected]=useState<string[]>([]);
   const [saving,setSaving]=useState(false);
   const [showExtras,setShowExtras]=useState(false);
+  const [filter,setFilter]=useState<'all'|RawgAdditionKind>('all');
+  const [query,setQuery]=useState('');
   const [feedback,setFeedback]=useState('');
   const [retryCount,setRetryCount]=useState(0);
   const canLookup=!!proxy && /^rawg:\d+$/.test(game.catalogId??'');
@@ -39,9 +41,12 @@ export default function DlcPanel({
   },[canLookup,discoverOpen,game.catalogId,proxy,results,retryCount]);
   const linked = useMemo(()=>new Set((game.dlcs??[]).flatMap(d=>[d.catalogId,d.title.toLowerCase()].filter(Boolean))),[game.dlcs]);
   const remaining=results?.filter(r=>!linked.has(r.id)&&!linked.has(r.title.toLowerCase())&&r.id!==game.catalogId)??[];
-  const primary=remaining.filter(item=>item.kind==='expansion');
-  const secondary=remaining.filter(item=>item.kind==='edition');
-  const other=remaining.filter(item=>item.kind==='other');
+  const filtered=remaining.filter(item=>(filter==='all'||item.kind===filter)
+    &&item.title.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()));
+  const primary=filtered.filter(item=>item.kind==='expansion');
+  const unclassified=filtered.filter(item=>item.kind==='unclassified');
+  const secondary=filtered.filter(item=>item.kind==='edition');
+  const other=filtered.filter(item=>item.kind==='other');
   const selectedResults=remaining.filter(r=>selected.includes(r.id));
   async function attach(items:CatalogueGame[]) {
     if(!items.length||saving)return;
@@ -61,7 +66,7 @@ export default function DlcPanel({
         {checked?<Check size={16}/>:<Plus size={16}/>}
       </button>
       <div className="related-dlc-art">{safeCover(entry.coverUrl)?<img src={entry.coverUrl} loading="lazy" alt=""/>:<Gamepad2 size={22}/>}</div>
-      <div className="related-dlc-info"><strong>{entry.title}</strong><small>{entry.year??'Year not listed'} · {entry.kind==='expansion'?'Likely DLC / expansion':entry.kind==='edition'?'Edition or bundle':'Other addition'}</small></div>
+      <div className="related-dlc-info"><strong>{entry.title}</strong><small>{entry.year??'Year not listed'} · {entry.kind==='expansion'?'Labelled DLC / expansion':entry.kind==='edition'?'Edition or bundle':entry.kind==='other'?'Non-game extra':'Related item (type unknown)'}</small></div>
       <button className="related-dlc-add" disabled={saving} onClick={()=>void attach([entry])} aria-label={'Attach '+entry.title+' to '+game.title}>Add</button>
     </div>;
   }
@@ -82,7 +87,7 @@ export default function DlcPanel({
     {discoverOpen&&<div className="related-dlc-browser">
       <div className="related-dlc-intro">
         <strong>Related add-ons from RAWG</strong>
-        <p>These are linked to this game by RAWG, not guesses from a title search. DLC, editions and extras are separated; review each item before adding it.</p>
+        <p>RAWG lists items connected to this game, but doesn't reliably label every addition as DLC. Search and filter below; you decide what to link.</p>
       </div>
       {!canLookup&&<div className="related-dlc-notice">To browse linked DLC, the base game needs a RAWG catalogue record and a configured Worker. Use Find DLC to search manually.</div>}
       {loading&&<p className="related-dlc-loading"><LoaderCircle className="spin" size={17}/> Looking up add-ons…</p>}
@@ -91,11 +96,24 @@ export default function DlcPanel({
         <button className="related-dlc-retry" onClick={()=>{setResults(null);setError('');setRetryCount(n=>n+1);}}>Retry</button>
       </div>}
       {results!==null&&<>
+        {results.length>0&&<div className="gv-dlc-filters">
+          <input type="search" value={query} onChange={e=>setQuery(e.target.value)} placeholder="Filter add-ons…" aria-label="Filter related additions"/>
+          <div role="group" aria-label="Addition type">
+            {([{id:'all',label:'All'}, {id:'expansion',label:'DLC'}, {id:'unclassified',label:'Unclassified'},
+              {id:'edition',label:'Editions'}, {id:'other',label:'Extras'}] as const).map(opt=>
+              <button key={opt.id} className={filter===opt.id?'active':''} aria-pressed={filter===opt.id}
+                onClick={()=>{setFilter(opt.id);setShowExtras(opt.id==='other');}}>{opt.label}</button>)}
+          </div>
+        </div>}
         {!results.length&&<p className="detail-dlc-empty">RAWG doesn't currently list any related editions or DLC for this game.</p>}
-        {primary.length>0&&<div className="related-dlc-group"><h4>Likely DLC & expansions <span>{primary.length}</span></h4>{primary.map(renderRow)}</div>}
-        {secondary.length>0&&<div className="related-dlc-group"><h4>Other editions & bundles <span>{secondary.length}</span></h4>{secondary.map(renderRow)}</div>}
+        {primary.length>0&&<div className="related-dlc-group"><h4>Labelled DLC & expansions <span>{primary.length}</span></h4>{primary.map(renderRow)}</div>}
+        {unclassified.length>0&&<div className="related-dlc-group"><h4>Other related releases <span>{unclassified.length}</span></h4>
+          <p className="gv-dlc-explanation">RAWG connects these to the base game, but hasn't confirmed their type. Some may be genuine DLC.</p>
+          {unclassified.map(renderRow)}</div>}
+        {secondary.length>0&&<div className="related-dlc-group"><h4>Other editions & bundles <span>{secondary.length}</span></h4>{secondary.map(renderRow)}</div>
         {other.length>0&&<div className="related-dlc-group"><button className="related-dlc-extras-toggle" onClick={()=>setShowExtras(v=>!v)}>Other extras ({other.length}) <ChevronDown size={16} className={showExtras?'dlc-chevron-open':''}/></button>{showExtras&&other.map(renderRow)}</div>}
         {results.length>0&&!remaining.length&&<p className="detail-dlc-empty">All reported add-ons are already attached to this game.</p>}
+        {!!remaining.length&&!filtered.length&&<p className="detail-dlc-empty">No related items match your filter.</p>}
       </>}
       {selectedResults.length>0&&<div className="related-dlc-batchbar">
         <span>{selectedResults.length} selected</span>

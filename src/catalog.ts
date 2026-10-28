@@ -264,12 +264,14 @@ export async function searchRawg(query: string, proxy: string, signal?: AbortSig
 }
 
 
-export type RawgAdditionKind = 'expansion' | 'edition' | 'other';
+export type RawgAdditionKind = 'expansion' | 'edition' | 'other' | 'unclassified';
 export interface RawgAddition extends CatalogueGame { kind: RawgAdditionKind }
 function additionKind(name: string): RawgAdditionKind {
   if (/\b(?:soundtrack|ost|art\s*book|artbook|wallpaper|wallpapers|companion\s+app|trailer|demo|beta|guide|theme)\b/i.test(name)) return 'other';
   if (/\b(?:goty|game\s+of\s+the\s+year|definitive|ultimate|complete|deluxe|gold|collector.s|premium|anniversary|bundle|edition|collection)\b/i.test(name)) return 'edition';
-  return 'expansion';
+  if (/\b(?:dlc|expansion|season\s+pass|expansion\s+pass|content\s+pack|add[- ]on|story\s+pack|chapter|episode)\b/i.test(name))return 'expansion';
+  // RAWG marks relationships, not a trusted DLC/media type. Don't invent one.
+  return 'unclassified';
 }
 /** RAWG supplies actual relationships, not guessed title matches.
  * Results may include editions and apps, so these are grouped separately.
@@ -290,7 +292,7 @@ export async function fetchRawgAdditions(gameCatalogId: string, proxy: string, s
     .filter(g=>{if(seen.has(g.id))return false;seen.add(g.id);return true;})
     .map(g=>({...mapRawgGame(g),kind:additionKind(g.name)}))
     .sort((a,b)=>{
-      const priority={expansion:0,edition:1,other:2};
+      const priority={expansion:0,unclassified:1,edition:2,other:3};
       return priority[a.kind]-priority[b.kind] || (b.popularity??0)-(a.popularity??0) || a.title.localeCompare(b.title);
     });
 }
