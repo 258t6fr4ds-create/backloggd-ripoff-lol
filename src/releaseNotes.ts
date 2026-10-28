@@ -17,6 +17,23 @@ export interface Release {
  */
 export const RELEASE_NOTES: Release[] = [
   {
+    version: '1.8.0',
+    date: '2026-10-28',
+    title: 'Game Profiles 2.0',
+    summary: 'Five proper game tabs, smarter DLC browsing, richer catalogue details and safe missing-metadata refresh.',
+    changes: [
+      { type: 'Added', text: 'Immersive game profiles with separate Overview, DLC, Playthroughs, Journal and Gallery tabs. Each tab shows only its own content.' },
+      { type: 'Improved', text: 'DLC browser now has search and type filters and labels unclassified RAWG additions honestly instead of assuming every item is an expansion.' },
+      { type: 'Added', text: 'Release date, developers and publishers in game metadata, preserved in edits, JSON exports and optional cloud sync.' },
+      { type: 'Added', text: 'Fill missing game info fetches the exact RAWG game ID and fills only empty fields, retaining personal platforms, ratings, artwork edits, notes, DLC and playthrough data.' },
+      { type: 'Added', text: 'Related titles from RAWG game-series endpoint, where available, and a dedicated image gallery with safe external source links.' },
+      { type: 'Improved', text: 'Mobile-friendly tab navigation, responsive gallery, clearer metadata cards and reduced profile scrolling.' },
+      { type: 'Improved', text: 'Existing Cloudflare Workers can refresh basic metadata via exact-ID search fallback. Full publisher/developer details and series browsing require one manual Worker script update.' },
+      { type: 'Fixed', text: 'Playthrough and journal editors no longer crowd DLC screens; existing entries remain intact.' },
+    ],
+  },
+
+  {
     version: '1.7.1',
     date: '2026-10-27',
     title: 'Cleaner DLC and playthrough details.',

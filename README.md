@@ -17,6 +17,15 @@ Every release must have complete notes in **both** the app's **What's New** pane
 
 The app always displays the current version and a **What's New** history, with an unread marker per browser until the latest entry is viewed. The notes remain available after the user's ChatGPT subscription ends.
 
+## v1.8.0 — Game Profiles 2.0
+
+- Open any game in your library to access **Overview**, **DLC**, **Playthroughs**, **Journal** and **Gallery** without one giant scroll.
+- Overview shows saved ratings, hours, notes, release date, developer, publisher, RAWG-supported platforms, and related games in the same series where the API provides them.
+- **Fill missing game info** only fills fields which are currently empty. It never changes your personal platform, rating, ownership, notes, existing artwork or DLC/playthrough records.
+- DLC browsing includes title and category filters. Unclassified RAWG additions are no longer labelled as DLC by default.
+- Full catalogue details and game series need a one-time deployed Worker code update: copy latest [worker/index.js](worker/index.js) into your existing Cloudflare Worker and deploy it. Your API key, Worker URL and environment variables stay as-is. Older Workers still support a limited exact-ID search fallback for missing basic metadata.
+- No database migrations or new keys.
+
 ## v1.7.1 — Compact playthrough section in DLC profiles
 
 - DLC and expansions now appear before playthroughs in game details.

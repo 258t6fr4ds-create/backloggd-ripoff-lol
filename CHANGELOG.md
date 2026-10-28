@@ -2,6 +2,29 @@
 
 All meaningful app updates receive dated, versioned patch notes. These match the in-app **What's New** panel. Entries list changes actually shipped, never planned features.
 
+## [1.8.0] — 2026-10-28
+**Game Profiles 2.0.**
+
+### Redesigned game profiles
+- Dedicated **Overview**, **DLC**, **Playthroughs**, **Journal** and **Gallery** tabs. No more giant stacked profile sections.
+- Tabs open content independently, and existing DLC, playthrough and journal editors remain accessible only in their relevant areas.
+- Full-width gallery of saved RAWG and user-provided screenshots, with link-out image viewing, and a responsive mobile layout.
+
+### Metadata
+- Optional full release date, developer and publisher fields stored on existing game records and editable manually.
+- **Fill missing game info** fetches RAWG by exact catalogue ID (not a fuzzy title match) and only fills empty metadata, genres, supported-platform details, cover or screenshots. It **does not** replace the user-selected playing platform, ratings, notes, owned status, custom artwork or history.
+- Basic metadata refresh falls back to existing RAWG Worker search when the new details endpoint has not been deployed. A new Worker endpoint for **GET /games/:id** unlocks full details.
+- Optional **More in the series** carousel lists other titles connected by RAWG's **GET /games/:id/game-series** endpoint without auto-adding them to the library.
+
+### DLC
+- Filter RAWG-linked add-ons by title and type: labelled DLC, unclassified releases, editions and extras.
+- Unknown additions are no longer automatically described as DLC, acknowledging RAWG's imperfect add-on categorisation.
+
+### Setup and compatibility
+- To unlock full metadata and series discovery, **redeploy** the updated `worker/index.js` to your existing Cloudflare Worker once. Your existing URL, RAWG secret and CORS origin remain the same. The web UI and basic metadata fallback work without redeployment.
+- Bumped the offline cache version for updated frontend assets.
+- No IndexedDB or Supabase schema migration, new secrets or account changes. All existing game, DLC, playthrough, journal and backup data remains compatible.
+
 ## [1.7.1] — 2026-10-27
 **Cleaner DLC and playthrough details.**
 

@@ -48,3 +48,17 @@ RAWG has a dedicated `GET /games/{id}/additions` endpoint that lists add-ons rel
 6. Open GameVault → Library → a RAWG-imported game → **Expansions & DLC → Browse RAWG**. The related additions appear, with editions and other extras grouped separately. No new Worker URL or Supabase settings are needed.
 
 The add-on browser fetches only when opened, never automatically attaches anything, preserves all previously linked DLC and allows **Search manually instead** as a fallback.
+
+
+## v1.8.0 — Full game details and related series
+
+The v1.8 Game Profiles 2.0 update adds optional RAWG metadata on the Overview tab. To obtain the developer, publisher and detailed release information, and to show other games in the same series, the Worker must expose two more RAWG paths:
+
+- `GET /games/{id}` — exact game details including `developers`, `publishers`, `released` and `description_raw`.
+- `GET /games/{id}/game-series` — related games in the series (where RAWG supplies that relationship).
+
+Update the code of your **existing** Worker in Cloudflare Workers & Pages with the latest [worker/index.js](worker/index.js) on `main`, and click **Deploy**. Do not create another Worker or regenerate your `RAWG_API_KEY` secret. Keep `ALLOWED_ORIGIN` unchanged.
+
+You can test the new route using `https://YOUR-WORKER.workers.dev/games/3328`; it should return a RAWG game JSON object with an `id` rather than `{"error":"Not found."}`. The original Worker root URL `/` intentionally still returns Not found.
+
+The GameVault **Fill missing game info** action will safely fall back to exact-ID RAWG search when the new route is not present, but search results generally lack developer/publisher data. It fills **only missing fields** and never replaces your own ratings, owned platform, saved notes, DLC or playthrough history. Series links are informational; they do not automatically add games.
