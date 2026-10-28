@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { BarChart3, Check, Clock3, Gamepad2, Library, Play, Trophy } from 'lucide-react';
+import { BarChart3, CalendarDays, Check, Clock3, Gamepad2, Library, Play, Trophy } from 'lucide-react';
 import type { Game } from './types';
 import { buildLibraryInsights } from './insights';
 import { statusLabel } from './types';
@@ -109,7 +109,7 @@ export default function StatDetailPanel({games,focus,onFocus,onOpen}:{
       <div className="gv-stat-highlights">
         <div><Check size={19}/><strong>{stats.completedCount}</strong><span>Games completed</span></div>
         <div><Trophy size={19}/><strong>{stats.completionPercent}%</strong><span>Collection finished</span></div>
-        <div><CalendarIcon/><strong>{stats.datedCompletions}</strong><span>Recorded finish dates</span></div>
+        <div><CalendarDays size={19}/><strong>{stats.datedCompletions}</strong><span>Recorded finish dates</span></div>
       </div>
       <div className="analytics-grid gv-stat-focus-grid">
         <ChartBars title="Your highest-rated completions" rows={completedScores} suffix="/10" empty="Rate completed games to see them here." onOpen={onOpen}/>
@@ -133,4 +133,3 @@ export default function StatDetailPanel({games,focus,onFocus,onOpen}:{
     </>}
   </section>;
 }
-function CalendarIcon(){return <Clock3 size={19}/>;}

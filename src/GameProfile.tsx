@@ -109,9 +109,9 @@ export default function GameProfile({
   const notes=game.notes.trim();
   return <div className="modal-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)onClose();}}>
     <section className="modal detail-modal gv-profile-v18" role="dialog" aria-modal="true" aria-label={'Details for '+game.title}>
-      <header className="modal-heading">
-        <button className="icon-text" onClick={onClose}><ArrowLeft size={18}/> Back to library</button>
-        <button className="icon-btn" onClick={onClose} aria-label="Close game profile"><X size={20}/></button>
+      <header className="modal-heading gv-profile-mobile-safe-header">
+        <button className="icon-text gv-profile-back" onClick={onClose} aria-label="Return to library"><ArrowLeft size={19}/> Return to library</button>
+        <button className="icon-btn gv-profile-close" onClick={onClose} aria-label="Close game profile"><X size={20}/></button>
       </header>
       {banner&&!bannerBroken?
         <div className="gv-detail-banner"><img src={banner} onError={()=>setBannerBroken(true)} alt=""/></div>:
@@ -142,7 +142,8 @@ export default function GameProfile({
           </div>
         </div>
       </div>
-      <nav className="gv-profile-tabs" role="tablist" aria-label="Game profile sections">
+      <div className="gv-profile-tab-guide"><strong>GAME SECTIONS</strong><span>Tap below · Swipe sideways to see all five</span></div>
+      <nav className="gv-profile-tabs" role="tablist" aria-label="Five game profile sections">
         {tabs.map(entry=>{const Icon=entry.icon;return <button key={entry.id} type="button"
           role="tab" id={'gv-tab-'+entry.id} aria-selected={tab===entry.id}
           aria-controls={'gv-panel-'+entry.id}

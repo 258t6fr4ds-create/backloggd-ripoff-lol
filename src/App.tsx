@@ -22,6 +22,8 @@ import type { CatalogueGame } from './catalog';
 import { readRawgProxy, saveRawgProxy, searchRawg } from './catalog';
 import PatchNotes from './PatchNotes';
 import GameProfile from './GameProfile';
+import StatDetailPanel from './StatDetailPanel';
+import type { StatFocus } from './StatDetailPanel';
 import InsightsPanel from './InsightsPanel';
 import DiscoveryRecommendations from './DiscoveryRecommendations';
 
@@ -96,8 +98,11 @@ function GameCard({ game, onClick, selecting = false, checked = false }: { game:
     </button>
   );
 }
-function StatCard({ value, label, icon }: { value: string; label: string; icon: ReactNode }) {
-  return <div className="stat-card"><div className="stat-top">{icon}</div><strong>{value}</strong><span>{label}</span></div>;
+function StatCard({ value, label, icon, onClick }: { value: string; label: string; icon: ReactNode; onClick?:()=>void }) {
+  const inside=<><div className="stat-top">{icon}</div><strong>{value}</strong><span>{label}</span>{onClick&&<span className="gv-stat-view-hint">View charts <ArrowRight size={13}/></span>}</>;
+  return onClick
+    ? <button type="button" className="stat-card gv-stat-card-link" onClick={onClick} aria-label={label+': '+value+'. Open detailed statistics.'}>{inside}</button>
+    : <div className="stat-card">{inside}</div>;
 }
 function GameForm({ initial, onClose, onSave }: {
   initial: Game | null; onClose: () => void; onSave: (value: GameInput) => Promise<boolean>;
@@ -163,6 +168,7 @@ export default function App() {
   const [fatal, setFatal] = useState('');
   const [notice, setNotice] = useState('');
   const [page, setPage] = useState<Page>('home');
+  const [statFocus,setStatFocus] = useState<StatFocus>('library');
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [sort, setSort] = useState<Sort>('recent');
@@ -241,10 +247,27 @@ export default function App() {
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, []);
+  const modalOpen=Boolean(editing || selectedId || showSettings || showPatchNotes || showCatalogue || showCloud);
   useEffect(() => {
-    document.body.style.overflow = editing || selectedId || showSettings || showPatchNotes || showCatalogue || showCloud ? 'hidden' : '';
-    return () => { document.body.style.overflow = ''; };
-  }, [editing, selectedId, showSettings, showPatchNotes, showCatalogue, showCloud]);
+    if(!modalOpen)return;
+    // iOS Safari rubber-band scrolling can expose the app underneath overflow:hidden.
+    const body=document.body;
+    const top=window.scrollY;
+    const previous={
+      position:body.style.position,top:body.style.top,left:body.style.left,
+      right:body.style.right,width:body.style.width,overflow:body.style.overflow
+    };
+    document.documentElement.classList.add('gv-modal-active');
+    body.style.position='fixed';
+    body.style.top=-top+'px';
+    body.style.left='0';body.style.right='0';body.style.width='100%';
+    body.style.overflow='hidden';
+    return ()=>{
+      document.documentElement.classList.remove('gv-modal-active');
+      Object.assign(body.style,previous);
+      window.scrollTo(0,top);
+    };
+  },[modalOpen]);
 
   const selected = games.find(g => g.id === selectedId) ?? null;
   const shelfNames = [...new Map(games.flatMap(g=>g.shelves??[])
@@ -346,7 +369,7 @@ export default function App() {
     const game: Game = {
       ...emptyGame,
       id: crypto.randomUUID(),
-      title: entry.title.slice(0, 160), year: entry.year, platform: '',
+      title: entry.title.slice(0, 160), year: entry.year, platform: 'PS5',
       released: entry.released??'', developers: entry.developers??'', publishers: entry.publishers??'',
       availablePlatforms: entry.platform.slice(0,600),
       genres: entry.genres.slice(0, 240), coverUrl: entry.coverUrl,
@@ -359,7 +382,7 @@ export default function App() {
       await saveGame(game);
       await recordPending(game, game.id);
       setGames(old => [...old, game]);
-      setNotice('Imported ' + game.title + '. RAWG-supported platforms are shown; set your own platform in Edit game.');
+      setNotice('Imported ' + game.title + ' with PS5 as your default platform. You can change it in Edit game.');
       return true;
     } catch (error) {
       setNotice('Could not import: ' + String(error));
@@ -403,7 +426,7 @@ export default function App() {
         const titleKey=entry.title.toLowerCase()+'|'+(entry.year??'');
         if(existing.has(entry.id)||existing.has(titleKey))continue;
         const game:Game={...emptyGame,id:crypto.randomUUID(),title:entry.title.slice(0,160),
-          year:entry.year,platform:'',availablePlatforms:entry.platform.slice(0,600),genres:entry.genres.slice(0,240),
+          year:entry.year,platform:'PS5',availablePlatforms:entry.platform.slice(0,600),genres:entry.genres.slice(0,240),
           released:entry.released??'',developers:entry.developers??'',publishers:entry.publishers??'',
           coverUrl:safeCover(entry.coverUrl),description:entry.description.slice(0,5000),
           catalogId:entry.id,catalogUrl:safeCover(entry.sourceUrl),
@@ -537,6 +560,10 @@ export default function App() {
     } catch(e) { setNotice('Import failed: ' + (e instanceof Error ? e.message : String(e))); }
   }
   function openPage(next: Page) { setPage(next); window.scrollTo({ top: 0, behavior: 'auto' }); }
+  function openStatFocus(focus:StatFocus) {
+    setStatFocus(focus);
+    openPage('stats');
+  }
   const action = <button className="btn btn-primary" onClick={() => setEditing('new')}><Plus size={17}/> Add manually</button>;
   const searchAction = <button className="btn btn-primary" onClick={() => setShowCatalogue(true)}><Search size={17}/> Find game</button>;
   const renderCards = (items: Game[], limit?: number) => (
@@ -588,10 +615,10 @@ export default function App() {
                   </div>
                 </section>
                 <div className="stat-grid">
-                  <StatCard icon={<Library size={18}/>} value={String(collection.length)} label="Games in library"/>
-                  <StatCard icon={<Gamepad2 size={18}/>} value={String(playing.length)} label="Currently playing"/>
-                  <StatCard icon={<Check size={18}/>} value={String(completed.length)} label="Completed"/>
-                  <StatCard icon={<Clock3 size={18}/>} value={fmtHours(totalHours) + 'h'} label="Hours logged"/>
+                  <StatCard icon={<Library size={18}/>} value={String(collection.length)} label="Games in library" onClick={()=>openStatFocus('library')}/>
+                  <StatCard icon={<Gamepad2 size={18}/>} value={String(playing.length)} label="Currently playing" onClick={()=>openStatFocus('playing')}/>
+                  <StatCard icon={<Check size={18}/>} value={String(completed.length)} label="Completed" onClick={()=>openStatFocus('completed')}/>
+                  <StatCard icon={<Clock3 size={18}/>} value={fmtHours(totalHours) + 'h'} label="Hours logged" onClick={()=>openStatFocus('hours')}/>
                 </div>
                 <section className="section-block"><div className="section-title"><div><span className="eyebrow">PICK UP WHERE YOU LEFT OFF</span><h2>Currently playing</h2></div><button className="text-link" onClick={() => openPage('library')}>View library <ArrowRight size={16}/></button></div>
                   {playing.length ? renderCards(playing, 6) : <Empty title="Nothing in progress yet" description="Find a game and set its status to Playing. It'll show up here." action={<button className="btn btn-subtle" onClick={() => setShowCatalogue(true)}><Search size={16}/> Find game</button>}/>}
@@ -679,6 +706,7 @@ export default function App() {
               </>}
               {page === 'stats' && <>
                 <div className="page-heading"><div><span className="eyebrow">YOUR PLAY HISTORY</span><h1>Statistics</h1><p>Numbers calculated from the games you've logged.</p></div></div>
+                <StatDetailPanel games={games} focus={statFocus} onFocus={setStatFocus} onOpen={setSelectedId}/>
                 <div className="stat-grid">
                   <StatCard icon={<Library size={18}/>} value={String(collection.length)} label="Library games"/>
                   <StatCard icon={<Clock3 size={18}/>} value={fmtHours(totalHours) + 'h'} label="Total playtime"/>
