@@ -110,7 +110,7 @@ export default function DlcPanel({
         {unclassified.length>0&&<div className="related-dlc-group"><h4>Other related releases <span>{unclassified.length}</span></h4>
           <p className="gv-dlc-explanation">RAWG connects these to the base game, but hasn't confirmed their type. Some may be genuine DLC.</p>
           {unclassified.map(renderRow)}</div>}
-        {secondary.length>0&&<div className="related-dlc-group"><h4>Other editions & bundles <span>{secondary.length}</span></h4>{secondary.map(renderRow)}</div>
+        {secondary.length>0&&<div className="related-dlc-group"><h4>Other editions & bundles <span>{secondary.length}</span></h4>{secondary.map(renderRow)}</div>}
         {other.length>0&&<div className="related-dlc-group"><button className="related-dlc-extras-toggle" onClick={()=>setShowExtras(v=>!v)}>Other extras ({other.length}) <ChevronDown size={16} className={showExtras?'dlc-chevron-open':''}/></button>{showExtras&&other.map(renderRow)}</div>}
         {results.length>0&&!remaining.length&&<p className="detail-dlc-empty">All reported add-ons are already attached to this game.</p>}
         {!!remaining.length&&!filtered.length&&<p className="detail-dlc-empty">No related items match your filter.</p>}
