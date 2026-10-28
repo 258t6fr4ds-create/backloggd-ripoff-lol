@@ -17,6 +17,13 @@ Every release must have complete notes in **both** the app's **What's New** pane
 
 The app always displays the current version and a **What's New** history, with an unread marker per browser until the latest entry is viewed. The notes remain available after the user's ChatGPT subscription ends.
 
+## v1.8.3 — Installed-app update notice
+
+- GameVault checks its existing service worker for new frontend versions on startup, app focus, foreground return and reconnecting to the internet.
+- After a new worker activates, it displays a **GameVault update available → Reload now** notice.
+- Reloads are opt-in, so unfinished form edits aren't interrupted. No reinstall or cleared website data is required.
+- If the Home Screen app still displays an older version, fully close the app in the iOS app switcher and reopen it; an older cached version cannot display this new notice until it refreshes once.
+
 ## v1.8.2 — Direct library shortcut
 
 - The home **Games in library** tile now opens the actual Library tab, with the full collection, shelves, filters and grid/list switch.

@@ -5,6 +5,7 @@ import './styles.css';
 import './visualRefresh.css';
 import './profile18.css';
 import './mobileStatsPatch.css';
+import './updateNotice.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

@@ -22,6 +22,7 @@ import type { CatalogueGame } from './catalog';
 import { readRawgProxy, saveRawgProxy, searchRawg } from './catalog';
 import PatchNotes from './PatchNotes';
 import GameProfile from './GameProfile';
+import UpdateNotice from './UpdateNotice';
 import StatDetailPanel from './StatDetailPanel';
 import type { StatFocus } from './StatDetailPanel';
 import InsightsPanel from './InsightsPanel';
@@ -575,6 +576,7 @@ export default function App() {
 
   return (
     <div className="app-shell">
+      <UpdateNotice/>
       <aside className="sidebar">
         <button className="brand" onClick={() => openPage('home')} aria-label="GameVault home"><span className="brand-symbol"><Gamepad2 size={23} strokeWidth={1.75}/></span><span>GAMEVAULT<span className="brand-dot">.</span></span></button>
         <div className="nav-section-title">YOUR SPACE</div>

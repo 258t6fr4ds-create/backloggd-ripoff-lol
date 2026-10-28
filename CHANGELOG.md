@@ -2,6 +2,16 @@
 
 All meaningful app updates receive dated, versioned patch notes. These match the in-app **What's New** panel. Entries list changes actually shipped, never planned features.
 
+## [1.8.3] — 2026-10-28
+**Clearer updates for installed Home Screen apps.**
+
+- When a new service worker takes control, the app displays a **GameVault update available** notice with a user-controlled **Reload now** button.
+- Checks for updates on mount, while returning to the foreground, on focus and after coming online.
+- Users can dismiss the notice. It never automatically reloads away from unsaved form changes.
+- Refreshed the offline app cache identifier. Version 1.8.2's correct Library shortcut remains unchanged.
+- No game schema, saved records, cloud sync, Worker or settings changes.
+- Note: this new update notice is only available after the device successfully loads 1.8.3 once. For older installed versions, fully close and reopen the Home Screen app to pick up the latest release.
+
 ## [1.8.2] — 2026-10-28
 **Library tile goes to Library.**
 

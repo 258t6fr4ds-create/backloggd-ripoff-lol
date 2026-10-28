@@ -17,6 +17,19 @@ export interface Release {
  */
 export const RELEASE_NOTES: Release[] = [
   {
+    version: '1.8.3',
+    date: '2026-10-28',
+    title: 'Clearer app updates.',
+    summary: 'Installed Home Screen apps now check for new versions on reopen and foreground, with a safe in-app Reload now notice.',
+    changes: [
+      { type: 'Added', text: 'A GameVault update available banner appears when a newer service worker takes control of the installed app.' },
+      { type: 'Improved', text: 'GameVault checks for service-worker updates when reopened, brought to the foreground or reconnected to the internet.' },
+      { type: 'Improved', text: 'Updates require a user-tapped Reload now, rather than interrupting unsaved game edits.' },
+      { type: 'Improved', text: 'Refreshed app offline cache to pick up new frontend assets without reinstalling the Home Screen app.' },
+    ],
+  },
+
+  {
     version: '1.8.2',
     date: '2026-10-28',
     title: 'Library tile goes to Library.',
