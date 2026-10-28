@@ -17,6 +17,13 @@ Every release must have complete notes in **both** the app's **What's New** pane
 
 The app always displays the current version and a **What's New** history, with an unread marker per browser until the latest entry is viewed. The notes remain available after the user's ChatGPT subscription ends.
 
+## v1.8.4 — Mobile bottom navigation with More
+
+- On phone-sized screens, GameVault **hides the old top bar entirely**. The iPhone status area no longer covers tiny toolbar icons.
+- Mobile navigation now has six tabs: **Home**, **Library**, **Discover**, **Wishlist**, **Stats** and **More**.
+- Open **More** to Find game, Add manually, Cloud sync, Settings & backups, or view What's new. Buttons are large, touch-friendly and respect the device's safe areas.
+- On desktop and wider layouts, the topbar and sidebar remain unchanged. Existing data and integrations aren't touched.
+
 ## v1.8.3 — Installed-app update notice
 
 - GameVault checks its existing service worker for new frontend versions on startup, app focus, foreground return and reconnecting to the internet.

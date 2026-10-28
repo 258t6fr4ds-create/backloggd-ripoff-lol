@@ -17,6 +17,21 @@ export interface Release {
  */
 export const RELEASE_NOTES: Release[] = [
   {
+    version: '1.8.4',
+    date: '2026-10-28',
+    title: 'A proper phone navigation.',
+    summary: 'Removed the inaccessible topbar on phones and moved its actions to a dedicated More tab with reachable, safe-area-aware controls.',
+    changes: [
+      { type: 'Fixed', text: 'The main app topbar no longer appears on phone-sized screens, avoiding controls hidden under the iPhone status bar.' },
+      { type: 'Added', text: 'A sixth mobile bottom-navigation tab called More provides Find game, Add manually, Cloud sync, Settings & backups, and What\'s new.' },
+      { type: 'Improved', text: 'The More page has large touch-friendly action rows, release-version information and online/RAWG connection status.' },
+      { type: 'Improved', text: 'Home, Library, Discover, Wishlist and Stats stay in bottom navigation without moving charts out of Statistics.' },
+      { type: 'Fixed', text: 'Page content and general app modals respect the iPhone safe area, including the status bar, while the bottom navigation clears the home indicator.' },
+      { type: 'Improved', text: 'Desktop navigation remains unchanged; no existing game, DLC, cloud or backup data is altered.' },
+    ],
+  },
+
+  {
     version: '1.8.3',
     date: '2026-10-28',
     title: 'Clearer app updates.',

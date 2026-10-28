@@ -2,6 +2,16 @@
 
 All meaningful app updates receive dated, versioned patch notes. These match the in-app **What's New** panel. Entries list changes actually shipped, never planned features.
 
+## [1.8.4] — 2026-10-28
+**Proper phone navigation.**
+
+- Removed the inaccessible app-wide topbar on mobile screens instead of continuing to shuffle small icons inside it.
+- Added a sixth bottom navigation tab: **More**. It includes large, touch-friendly actions for **Find game**, **Add manually**, **Cloud sync**, **Settings & backups**, and **What's new**.
+- All five existing bottom tabs remain; the Library tile still opens Library, and analytics stay under Statistics.
+- Added status-bar-safe padding for the first content and for settings, catalogue and other general-purpose modal sheets. Bottom navigation respects the iPhone home indicator.
+- The More page shows the current version, online/offline status and whether a RAWG Worker is connected on this device.
+- Desktop layout and side navigation remain unchanged. No database migration, changes to saved games, Worker redeployment or settings reset needed.
+
 ## [1.8.3] — 2026-10-28
 **Clearer updates for installed Home Screen apps.**
 
