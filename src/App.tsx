@@ -28,7 +28,7 @@ import type { StatFocus } from './StatDetailPanel';
 import InsightsPanel from './InsightsPanel';
 import DiscoveryRecommendations from './DiscoveryRecommendations';
 
-type Page = 'home' | 'library' | 'discover' | 'wishlist' | 'stats';
+type Page = 'home' | 'library' | 'discover' | 'wishlist' | 'stats' | 'more';
 type Sort = 'recent' | 'title' | 'rating' | 'hours' | 'year';
 const NAV = [
   { id: 'home', label: 'Home', icon: Home },
@@ -37,6 +37,9 @@ const NAV = [
   { id: 'wishlist', label: 'Wishlist', icon: Heart },
   { id: 'stats', label: 'Statistics', icon: BarChart3 },
 ] as const;
+// The desktop has a full sidebar and header. On a phone, the inaccessible
+// topbar is removed and all its actions live in the bottom-accessible More tab.
+const MOBILE_NAV = [...NAV, { id: 'more', label: 'More', icon: MoreHorizontal }] as const;
 
 const dateLabel = (iso: string) => {
   if (!iso) return 'Not recorded';
@@ -593,7 +596,7 @@ export default function App() {
       </aside>
       <main className="main-panel">
         <header className="topbar">
-          <div className="topbar-left"><button className="mobile-brand" onClick={() => openPage('home')} aria-label="GameVault home"><Gamepad2 size={23}/></button><span className="breadcrumb">MY SPACE</span><span className="crumb-slash">/</span><strong>{NAV.find(n => n.id === page)?.label}</strong></div>
+          <div className="topbar-left"><button className="mobile-brand" onClick={() => openPage('home')} aria-label="GameVault home"><Gamepad2 size={23}/></button><span className="breadcrumb">MY SPACE</span><span className="crumb-slash">/</span><strong>{NAV.find(n => n.id === page)?.label ?? 'More'}</strong></div>
           <div className="topbar-right">
             {!isOnline && <Pill>Offline</Pill>}
             <button className="cloud-shortcut" onClick={() => setShowCloud(true)} aria-label="Cloud sync"><Cloud size={18}/><span>Cloud sync</span></button>
@@ -729,12 +732,45 @@ export default function App() {
                 </div>
                 <InsightsPanel games={games}/>
               </>}
+              {page === 'more' && <>
+                <div className="page-heading gv-more-heading">
+                  <div><span className="eyebrow">YOUR GAMEVAULT</span><h1>More</h1><p>Everything you need to manage your collection, in one place.</p></div>
+                </div>
+                <div className="gv-more-actions" aria-label="GameVault actions">
+                  <div className="gv-more-section-label">YOUR GAMES</div>
+                  <button type="button" className="gv-more-action" onClick={() => setShowCatalogue(true)}>
+                    <span className="gv-more-icon"><Search size={22}/></span>
+                    <span className="gv-more-copy"><strong>Find a game</strong><small>Search the catalogue and add games or expansions</small></span><ArrowRight size={20}/>
+                  </button>
+                  <button type="button" className="gv-more-action" onClick={() => setEditing('new')}>
+                    <span className="gv-more-icon"><Plus size={22}/></span>
+                    <span className="gv-more-copy"><strong>Add manually</strong><small>Create your own game record with PS5 as the default platform</small></span><ArrowRight size={20}/>
+                  </button>
+                  <div className="gv-more-section-label">YOUR ACCOUNT & SETTINGS</div>
+                  <button type="button" className="gv-more-action" onClick={() => setShowCloud(true)}>
+                    <span className="gv-more-icon"><Cloud size={22}/></span>
+                    <span className="gv-more-copy"><strong>Cloud sync</strong><small>Sync your saved games across devices</small></span><ArrowRight size={20}/>
+                  </button>
+                  <button type="button" className="gv-more-action" onClick={() => setShowSettings(true)}>
+                    <span className="gv-more-icon"><Settings2 size={22}/></span>
+                    <span className="gv-more-copy"><strong>Settings & backups</strong><small>RAWG connection, export and import your library</small></span><ArrowRight size={20}/>
+                  </button>
+                  <button type="button" className="gv-more-action" onClick={openPatchNotes}>
+                    <span className="gv-more-icon"><BookOpen size={22}/></span>
+                    <span className="gv-more-copy"><strong>What's new {hasUnreadPatchNotes && <span className="gv-more-unread">New</span>}</strong><small>Update history and release notes</small></span><ArrowRight size={20}/>
+                  </button>
+                </div>
+                <div className="gv-more-info">
+                  <span><Gamepad2 size={17}/> GameVault v{APP_VERSION}</span>
+                  <span>{isOnline ? 'Online' : 'Offline'} · {workerAddress ? 'RAWG connected on this device' : 'RAWG not connected'}</span>
+                </div>
+              </>}
             </>
           )}
         </div>
         <footer className="site-footer"><span>GAMEVAULT © 2026 · YOUR LIBRARY, YOUR RULES</span><div className="footer-links"><button onClick={openPatchNotes}>v{APP_VERSION} · Patch notes <BookOpen size={14}/></button><button onClick={() => setShowSettings(true)}>Local data & backups <ArrowDownToLine size={14}/></button></div></footer>
       </main>
-      <nav className="mobile-nav" aria-label="Mobile navigation">{NAV.map(item => { const Icon = item.icon; return <button key={item.id} className={page === item.id ? 'active' : ''} onClick={() => openPage(item.id)} aria-current={page === item.id ? 'page' : undefined}><Icon size={21}/><span>{item.label === 'Statistics' ? 'Stats' : item.label}</span></button>; })}</nav>
+      <nav className="mobile-nav" aria-label="Mobile navigation">{MOBILE_NAV.map(item => { const Icon = item.icon; return <button key={item.id} className={page === item.id ? 'active' : ''} onClick={() => openPage(item.id)} aria-current={page === item.id ? 'page' : undefined} aria-label={item.label}><Icon size={21}/><span>{item.label === 'Statistics' ? 'Stats' : item.label}</span></button>; })}</nav>
       {selected && <GameProfile key={selected.id}
         game={selected}
         proxy={workerAddress}
