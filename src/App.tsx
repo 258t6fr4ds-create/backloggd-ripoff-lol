@@ -98,10 +98,13 @@ function GameCard({ game, onClick, selecting = false, checked = false }: { game:
     </button>
   );
 }
-function StatCard({ value, label, icon, onClick }: { value: string; label: string; icon: ReactNode; onClick?:()=>void }) {
-  const inside=<><div className="stat-top">{icon}</div><strong>{value}</strong><span>{label}</span>{onClick&&<span className="gv-stat-view-hint">View charts <ArrowRight size={13}/></span>}</>;
+function StatCard({ value, label, icon, onClick, destination = 'charts' }: {
+  value: string; label: string; icon: ReactNode; onClick?:()=>void; destination?: 'charts'|'library'
+}) {
+  const actionText=destination==='library'?'Open library':'View charts';
+  const inside=<><div className="stat-top">{icon}</div><strong>{value}</strong><span>{label}</span>{onClick&&<span className="gv-stat-view-hint">{actionText} <ArrowRight size={13}/></span>}</>;
   return onClick
-    ? <button type="button" className="stat-card gv-stat-card-link" onClick={onClick} aria-label={label+': '+value+'. Open detailed statistics.'}>{inside}</button>
+    ? <button type="button" className="stat-card gv-stat-card-link" onClick={onClick} aria-label={label+': '+value+'. '+actionText+'.'}>{inside}</button>
     : <div className="stat-card">{inside}</div>;
 }
 function GameForm({ initial, onClose, onSave }: {
@@ -615,7 +618,7 @@ export default function App() {
                   </div>
                 </section>
                 <div className="stat-grid">
-                  <StatCard icon={<Library size={18}/>} value={String(collection.length)} label="Games in library" onClick={()=>openStatFocus('library')}/>
+                  <StatCard icon={<Library size={18}/>} value={String(collection.length)} label="Games in library" destination="library" onClick={()=>openPage('library')}/>
                   <StatCard icon={<Gamepad2 size={18}/>} value={String(playing.length)} label="Currently playing" onClick={()=>openStatFocus('playing')}/>
                   <StatCard icon={<Check size={18}/>} value={String(completed.length)} label="Completed" onClick={()=>openStatFocus('completed')}/>
                   <StatCard icon={<Clock3 size={18}/>} value={fmtHours(totalHours) + 'h'} label="Hours logged" onClick={()=>openStatFocus('hours')}/>

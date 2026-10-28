@@ -17,6 +17,18 @@ export interface Release {
  */
 export const RELEASE_NOTES: Release[] = [
   {
+    version: '1.8.2',
+    date: '2026-10-28',
+    title: 'Library tile goes to Library.',
+    summary: 'The home library count now opens your actual game collection; all breakdown charts remain available in Statistics.',
+    changes: [
+      { type: 'Fixed', text: 'The Games in library home tile opens the Library tab instead of the Statistics dashboard.' },
+      { type: 'Improved', text: 'The library tile now says Open library, with matching accessible button text.' },
+      { type: 'Improved', text: 'Currently playing, Completed and Hours logged still lead to their focused statistics, and Library charts remain in the Statistics tab.' },
+    ],
+  },
+
+  {
     version: '1.8.1',
     date: '2026-10-28',
     title: 'Mobile profile fixes and interactive home stats.',

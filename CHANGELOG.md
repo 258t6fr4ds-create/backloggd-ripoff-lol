@@ -2,6 +2,15 @@
 
 All meaningful app updates receive dated, versioned patch notes. These match the in-app **What's New** panel. Entries list changes actually shipped, never planned features.
 
+## [1.8.2] — 2026-10-28
+**Library tile goes to Library.**
+
+### Fixed
+- Clicking the **Games in library** home tile now opens **Library**, not the Statistics dashboard.
+- Updated the tile's hint and accessibility label to say **Open library**.
+- Library breakdown charts are still available under **Statistics**. The other home tiles keep their focused statistics shortcuts.
+- No saved records, sync logic or data formats changed.
+
 ## [1.8.1] — 2026-10-28
 **Mobile profile fixes and interactive home stats.**
 

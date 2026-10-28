@@ -17,6 +17,12 @@ Every release must have complete notes in **both** the app's **What's New** pane
 
 The app always displays the current version and a **What's New** history, with an unread marker per browser until the latest entry is viewed. The notes remain available after the user's ChatGPT subscription ends.
 
+## v1.8.2 — Direct library shortcut
+
+- The home **Games in library** tile now opens the actual Library tab, with the full collection, shelves, filters and grid/list switch.
+- Library-related charts remain under Statistics; the other three home cards still open their matching statistics dashboards.
+- No setup, Worker changes or data migration required.
+
 ## v1.8.1 — Mobile navigation, PS5 defaults and detailed home statistics
 
 - Game profiles use a safe-area-aware, reachable **Return to library** button, and scrolling a modal never reveals or activates the bottom navigation underneath.
