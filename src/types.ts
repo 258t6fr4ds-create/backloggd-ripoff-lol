@@ -47,6 +47,10 @@ export interface Game {
   genres: string;
   coverUrl: string;
   description?: string;
+  /** RAWG catalogue metadata. Kept separate from personal game information. */
+  released?: string;
+  developers?: string;
+  publishers?: string;
   screenshots?: string[];
   catalogId?: string;
   catalogUrl?: string;
@@ -89,6 +93,7 @@ export const emptyGame: GameInput = {
   status: 'backlog', ownership: 'digital', rating: null, hours: 0, dlcs: [],
   playthroughs: [], journal: [], shelves: [],
   notes: '', completedAt: '', priceTarget: null, favourite: false,
+  released: '', developers: '', publishers: '',
 };
 
 export function normalizeGame(raw: unknown): Game | null {
@@ -140,6 +145,9 @@ export function normalizeGame(raw: unknown): Game | null {
     genres: text('genres').slice(0, 240),
     coverUrl: text('coverUrl').slice(0, 2048),
     description: text('description').slice(0, 5000),
+    released: /^\d{4}-\d{2}-\d{2}$/.test(text('released')) ? text('released').slice(0,10) : '',
+    developers: text('developers').slice(0,400),
+    publishers: text('publishers').slice(0,400),
     screenshots: Array.isArray(g.screenshots) ? g.screenshots.filter((url): url is string => typeof url === 'string' && !!safeCover(url)).slice(0, 40) : [],
     catalogId: text('catalogId').slice(0, 120),
     catalogUrl: safeCover(text('catalogUrl').slice(0, 2048)),

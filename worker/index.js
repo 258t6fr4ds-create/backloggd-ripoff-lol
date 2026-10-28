@@ -34,11 +34,11 @@ export default {
     } else {
       // Dedicated game relationships from RAWG: not a text search.
       // /additions includes DLC, expansions, editions and occasional companion apps.
-      const match = url.pathname.match(/^\/games\/(\d+)\/(screenshots|additions|parent-games)$/);
+      const match = url.pathname.match(/^\/games\/(\d+)(?:\/(screenshots|additions|parent-games|game-series))?$/);
       if (!match) return reply('Not found.', 404);
-      const kind = match[2];
-      upstream = new URL('https://api.rawg.io/api/games/' + match[1] + '/' + kind);
-      upstream.searchParams.set('page_size', kind === 'additions' ? '40' : kind === 'parent-games' ? '20' : '16');
+      const kind = match[2] || '';
+      upstream = new URL('https://api.rawg.io/api/games/' + match[1] + (kind ? '/' + kind : ''));
+      if (kind) upstream.searchParams.set('page_size', kind === 'additions' ? '40' : kind === 'parent-games' ? '20' : '16');
       if (kind === 'additions') {
         const page = Number(url.searchParams.get('page') || '1');
         upstream.searchParams.set('page', String(Number.isInteger(page) ? Math.min(3, Math.max(1, page)) : 1));

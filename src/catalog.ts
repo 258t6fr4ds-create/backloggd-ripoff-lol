@@ -13,6 +13,9 @@ export interface CatalogueGame {
   genres: string;
   platform: string;
   description: string;
+  released?: string;
+  developers?: string;
+  publishers?: string;
   source: CatalogueSource;
   sourceUrl: string;
   screenshots: string[];
@@ -97,6 +100,7 @@ function mapRawgGame(game: RawgGame): CatalogueGame {
     genres: game.genres?.map(g => g.name).filter(Boolean).join(', ') ?? '',
     platform,
     description: '',
+    released: /^\d{4}-\d{2}-\d{2}$/.test(game.released??'') ? game.released : '',
     source: 'rawg',
     sourceUrl: 'https://rawg.io/games/' + encodeURIComponent(game.slug ?? String(game.id)),
     screenshots: (game.short_screenshots ?? []).filter(i => !i.is_deleted).map(i => i.image).filter((i): i is string => !!i).slice(0, 8),
@@ -289,6 +293,81 @@ export async function fetchRawgAdditions(gameCatalogId: string, proxy: string, s
       const priority={expansion:0,edition:1,other:2};
       return priority[a.kind]-priority[b.kind] || (b.popularity??0)-(a.popularity??0) || a.title.localeCompare(b.title);
     });
+}
+
+
+export interface RawgMetadata {
+  id: string;
+  title: string;
+  year: number | null;
+  coverUrl: string;
+  genres: string;
+  platform: string;
+  released: string;
+  description: string;
+  developers: string;
+  publishers: string;
+  screenshots: string[];
+  /** Full metadata requires the optional Worker detail endpoint. */
+  full: boolean;
+}
+type RawgDetail = RawgGame & {
+  description_raw?: string;
+  developers?: {name?:string}[];
+  publishers?: {name?:string}[];
+};
+const uniqueNames = (items: {name?:string}[] | undefined):string =>
+  [...new Set((items??[]).map(x=>x.name?.trim()).filter((x):x is string=>!!x))].join(', ').slice(0,400);
+/** Fetch a game's RAWG detail by exact ID. Existing /games search is a safe
+ * fallback for devices whose Worker predates the detailed metadata route.
+ * No user-entered information is modified here.
+ */
+export async function fetchRawgMetadata(catalogId:string,title:string,proxy:string,signal?:AbortSignal):Promise<RawgMetadata> {
+  const id=catalogId.replace(/^rawg:/,'');
+  if (!/^\d+$/.test(id))throw Error('This game does not have a RAWG catalogue ID.');
+  if (!proxy)throw Error('Connect your RAWG Worker in Settings first.');
+  let game:CatalogueGame | undefined;
+  let description='',developers='',publishers='',full=false;
+  const res=await fetch(proxy+'/games/'+id,{signal});
+  if(res.ok){
+    const detail=await res.json() as RawgDetail;
+    if(detail.id!==Number(id))throw Error('RAWG returned an unexpected game ID. Nothing was changed.');
+    game=mapRawgGame(detail);
+    description=(typeof detail.description_raw==='string'?detail.description_raw:'').slice(0,5000);
+    developers=uniqueNames(detail.developers);
+    publishers=uniqueNames(detail.publishers);
+    full=true;
+  }else if(res.status===404){
+    // An older Worker may support search but not /games/:id.
+    const candidates=await searchRawg(title,proxy,signal,true,false);
+    game=candidates.find(c=>c.id===catalogId);
+    if(!game)throw Error('The old Worker does not expose game details, and RAWG search could not match the exact game ID. Update the Worker for full metadata.');
+  }else{
+    throw Error('RAWG details request failed ('+res.status+'). No library data was changed.');
+  }
+  if(!game)throw Error('RAWG game metadata was not found.');
+  // Screenshot failures never block other metadata.
+  let screenshots=game.screenshots;
+  try {
+    const fetched=await fetchRawgScreenshots(catalogId,proxy,signal);
+    screenshots=[...new Set([...screenshots,...fetched])].slice(0,24);
+  }catch{ /* keep available artwork */ }
+  if(signal?.aborted)throw new DOMException('Aborted','AbortError');
+  return {id:game.id,title:game.title,year:game.year,
+    coverUrl:game.coverUrl,genres:game.genres,platform:game.platform,
+    released:game.released??'',description:description||game.description,
+    developers,publishers,screenshots,full};
+}
+
+export async function fetchRawgSeries(catalogId:string,proxy:string,signal?:AbortSignal):Promise<CatalogueGame[]> {
+  const id=catalogId.replace(/^rawg:/,'');
+  if(!/^\d+$/.test(id)||!proxy)return [];
+  const response=await fetch(proxy+'/games/'+id+'/game-series',{signal});
+  if(response.status===404)return [];
+  if(!response.ok)throw Error('RAWG series lookup failed ('+response.status+').');
+  const data=await response.json() as {results?:RawgGame[]};
+  return (data.results??[]).filter(g=>typeof g.id==='number'&&g.id>0&&g.id!==Number(id)&&!!g.name)
+    .slice(0,12).map(mapRawgGame);
 }
 
 export async function fetchRawgScreenshots(gameId: string, proxy: string, signal?: AbortSignal): Promise<string[]> {
