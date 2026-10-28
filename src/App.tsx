@@ -17,11 +17,11 @@ import {
 import type { Game, GameDlc, GameInput, GameStatus, Ownership } from './types';
 import { APP_VERSION } from './releaseNotes';
 import CatalogueSearch from './CatalogueSearch';
-import DlcPanel from './DlcPanel';
+ 
 import type { CatalogueGame } from './catalog';
 import { readRawgProxy, saveRawgProxy, searchRawg } from './catalog';
 import PatchNotes from './PatchNotes';
-import PlaythroughJournal from './PlaythroughJournal';
+import GameProfile from './GameProfile';
 import InsightsPanel from './InsightsPanel';
 import DiscoveryRecommendations from './DiscoveryRecommendations';
 
@@ -107,6 +107,7 @@ function GameForm({ initial, onClose, onSave }: {
     availablePlatforms: initial.availablePlatforms ?? '', genres: initial.genres,
     shelves: initial.shelves ?? [],
     coverUrl: initial.coverUrl, description: initial.description,
+    released: initial.released ?? '', developers: initial.developers ?? '', publishers: initial.publishers ?? '',
     catalogId: initial.catalogId, catalogUrl: initial.catalogUrl,
     catalogSource: initial.catalogSource, screenshots: initial.screenshots ?? [],
     status: initial.status, ownership: initial.ownership,
@@ -133,6 +134,9 @@ function GameForm({ initial, onClose, onSave }: {
             <label className="field span-2">Game title <input required maxLength={160} placeholder="e.g. Kingdom Come: Deliverance" value={draft.title} onChange={e => set('title', e.target.value)}/></label>
             <label className="field">Your platform <input maxLength={60} placeholder="PS5, PC, Switch…" value={draft.platform} onChange={e => set('platform', e.target.value)}/><span className="field-help">Where you personally play or own the game. RAWG availability is listed separately.</span></label>
             <label className="field">Release year <input type="number" min="1950" max="2200" placeholder="Optional" value={draft.year ?? ''} onChange={e => set('year', e.target.value ? Number(e.target.value) : null)}/></label>
+            <label className="field">Full release date (optional) <input type="date" value={draft.released??''} onChange={e=>set('released',e.target.value)}/></label>
+            <label className="field">Developer <input maxLength={400} value={draft.developers??''} onChange={e=>set('developers',e.target.value)} placeholder="Studio name"/></label>
+            <label className="field">Publisher <input maxLength={400} value={draft.publishers??''} onChange={e=>set('publishers',e.target.value)} placeholder="Publisher name"/></label>
             <label className="field">Status <select value={draft.status} onChange={e => { const status = e.target.value as GameStatus; setDraft(d => ({ ...d, status, ownership: status === 'wishlist' && d.ownership === 'digital' ? 'not-owned' : d.ownership })); }}>{STATUSES.map(s => <option value={s} key={s}>{statusLabel[s]}</option>)}</select></label>
             <label className="field">How you access it <select value={draft.ownership} onChange={e => set('ownership', e.target.value as Ownership)}>{OWNERSHIPS.map(s => <option value={s} key={s}>{ownershipLabel[s]}</option>)}</select></label>
             <label className="field">Your rating (0–10) <input type="number" min="0" max="10" step="0.5" placeholder="Unrated" value={draft.rating ?? ''} onChange={e => set('rating', e.target.value === '' ? null : Number(e.target.value))}/></label>
@@ -343,6 +347,7 @@ export default function App() {
       ...emptyGame,
       id: crypto.randomUUID(),
       title: entry.title.slice(0, 160), year: entry.year, platform: '',
+      released: entry.released??'', developers: entry.developers??'', publishers: entry.publishers??'',
       availablePlatforms: entry.platform.slice(0,600),
       genres: entry.genres.slice(0, 240), coverUrl: entry.coverUrl,
       description: entry.description.slice(0, 5000),
@@ -399,6 +404,7 @@ export default function App() {
         if(existing.has(entry.id)||existing.has(titleKey))continue;
         const game:Game={...emptyGame,id:crypto.randomUUID(),title:entry.title.slice(0,160),
           year:entry.year,platform:'',availablePlatforms:entry.platform.slice(0,600),genres:entry.genres.slice(0,240),
+          released:entry.released??'',developers:entry.developers??'',publishers:entry.publishers??'',
           coverUrl:safeCover(entry.coverUrl),description:entry.description.slice(0,5000),
           catalogId:entry.id,catalogUrl:safeCover(entry.sourceUrl),
           catalogSource:entry.source,screenshots:entry.screenshots.filter(safeCover).slice(0,40),
@@ -696,31 +702,18 @@ export default function App() {
         <footer className="site-footer"><span>GAMEVAULT © 2026 · YOUR LIBRARY, YOUR RULES</span><div className="footer-links"><button onClick={openPatchNotes}>v{APP_VERSION} · Patch notes <BookOpen size={14}/></button><button onClick={() => setShowSettings(true)}>Local data & backups <ArrowDownToLine size={14}/></button></div></footer>
       </main>
       <nav className="mobile-nav" aria-label="Mobile navigation">{NAV.map(item => { const Icon = item.icon; return <button key={item.id} className={page === item.id ? 'active' : ''} onClick={() => openPage(item.id)} aria-current={page === item.id ? 'page' : undefined}><Icon size={21}/><span>{item.label === 'Statistics' ? 'Stats' : item.label}</span></button>; })}</nav>
-      {selected && <div className="modal-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) setSelectedId(null); }}>
-        <section className="modal detail-modal" role="dialog" aria-modal="true" aria-label={'Details for ' + selected.title}>
-          <header className="modal-heading"><button className="icon-text" onClick={() => setSelectedId(null)}><ArrowLeft size={18}/> Back to library</button><button className="icon-btn" onClick={() => setSelectedId(null)} aria-label="Close"><X size={20}/></button></header>
-          {safeCover(selected.screenshots?.[0]??'') || safeCover(selected.coverUrl) ? <div className="gv-detail-banner" aria-hidden="true">
-            <img src={safeCover(selected.screenshots?.[0]??'')||safeCover(selected.coverUrl)} alt=""/>
-          </div> : <div className="gv-detail-banner gv-detail-banner-fallback" aria-hidden="true"><Gamepad2 size={72}/></div>}
-          <div className="detail-main"><Cover game={selected} className="detail-cover"/><div className="detail-copy"><span className="eyebrow">{selected.platform ? 'YOUR PLATFORM: ' + selected.platform : 'PLATFORM NOT SET'}{selected.year ? ' / ' + selected.year : ''}</span><h2>{selected.title}</h2><div className="detail-pills"><Pill tone={'status-'+selected.status}>{statusLabel[selected.status]}</Pill><Pill>{ownershipLabel[selected.ownership]}</Pill>{selected.favourite && <Pill><Heart size={12} fill="currentColor"/> Favourite</Pill>}</div><p className="detail-genres">{selected.genres || 'No genres added yet'}</p>
-            {!!selected.shelves?.length&&<div className="gv-profile-shelves" aria-label="Custom shelves">{selected.shelves.map(s=><span key={s}>{s}</span>)}</div>}{selected.availablePlatforms && <p className="detail-available-platforms"><strong>Available on (RAWG):</strong> {selected.availablePlatforms}</p>}<div className="detail-actions"><button className="btn btn-primary" onClick={() => { setEditing(selected); setSelectedId(null); }}><Pencil size={16}/> Edit game</button><button className="btn btn-subtle" onClick={() => patchGame(selected,{favourite: !selected.favourite})}><Heart size={16} fill={selected.favourite ? 'currentColor' : 'none'}/> {selected.favourite ? 'Unfavourite' : 'Favourite'}</button></div></div></div>
-          <div className="detail-stats"><div><strong>{selected.rating !== null ? selected.rating+'/10' : '—'}</strong><span>Your rating</span></div><div><strong>{fmtHours(selected.hours)}h</strong><span>Playtime logged</span></div><div><strong>{dateLabel(selected.completedAt)}</strong><span>Completed</span></div></div>
-          {selected.status === 'wishlist' && selected.priceTarget !== null && <div className="note-box">Your target price: <strong>{currency(selected.priceTarget)}</strong> AUD tracking only — not a live quote.</div>}
-          {selected.description && <div className="detail-description"><span className="eyebrow">ABOUT THE GAME</span><p>{selected.description}</p></div>}
-          {(selected.screenshots ?? []).filter(safeCover).length > 0 && <div className="detail-gallery"><div className="detail-gallery-title"><span className="eyebrow">REAL SCREENSHOTS</span><span>{selected.screenshots?.length ?? 0} images</span></div><div className="detail-gallery-strip">{(selected.screenshots ?? []).filter(safeCover).map((url,i) => <a key={url+'-'+i} href={url} target="_blank" rel="noopener noreferrer"><img loading="lazy" src={url} alt={selected.title + ' screenshot ' + (i+1)}/></a>)}</div><small>External image links. Open an image to see it full size.</small></div>}
-          {selected.catalogUrl && safeCover(selected.catalogUrl) && <div className="detail-catalog-source">Game information and artwork: <a href={selected.catalogUrl} target="_blank" rel="noopener noreferrer">{selected.catalogSource === 'rawg' ? 'RAWG' : 'Wikipedia'} ↗</a></div>}
-          <DlcPanel key={selected.id} game={selected} proxy={workerAddress}
-            onFindManually={() => startDlcSearch(selected)}
-            onAttach={entries => importManyCatalogue(entries,'backlog',selected.id)}
-            onModify={(id,action) => updateDlc(selected,id,action)}
-          />
-          <PlaythroughJournal key={selected.id} game={selected}
-            onUpdate={change => patchGame(selected,change)}
-          />
-          <div className="detail-notes"><span className="eyebrow">YOUR NOTES</span><p>{selected.notes || 'No notes yet. Edit this game to add your thoughts or progress.'}</p></div>
-          <footer className="detail-footer"><small>Added {dateLabel(selected.addedAt)} · Updated {dateLabel(selected.updatedAt)}</small><button className="danger-link" onClick={() => deleteGame(selected)}><Trash2 size={16}/> Remove game</button></footer>
-        </section>
-      </div>}
+      {selected && <GameProfile key={selected.id}
+        game={selected}
+        proxy={workerAddress}
+        onClose={()=>setSelectedId(null)}
+        onEdit={()=>{setEditing(selected);setSelectedId(null);}}
+        onToggleFavourite={()=>patchGame(selected,{favourite:!selected.favourite})}
+        onDelete={()=>void deleteGame(selected)}
+        onUpdate={changes=>patchGame(selected,changes)}
+        onDlcSearch={()=>startDlcSearch(selected)}
+        onDlcAttach={entries=>importManyCatalogue(entries,'backlog',selected.id)}
+        onDlcModify={(id,action)=>updateDlc(selected,id,action)}
+      />}
       {editing && <GameForm key={editing === 'new' ? 'new' : editing.id} initial={editing === 'new' ? null : editing} onClose={() => setEditing(null)} onSave={persist}/>}
       <CloudPanel visible={showCloud} onClose={() => setShowCloud(false)} onRemote={games=>setGames(games)} onNotify={message=>setNotice(message)}/>
       {showCatalogue && <CatalogueSearch
