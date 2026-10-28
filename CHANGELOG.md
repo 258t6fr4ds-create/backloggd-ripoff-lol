@@ -2,6 +2,25 @@
 
 All meaningful app updates receive dated, versioned patch notes. These match the in-app **What's New** panel. Entries list changes actually shipped, never planned features.
 
+## [1.8.1] — 2026-10-28
+**Mobile profile fixes and interactive home stats.**
+
+### Mobile fixes
+- Enlarged the game profile **Return to library** control and positioned the profile within iPhone safe areas.
+- Prevented rubber-band scrolling from exposing bottom navigation behind the game profile. All modals lock background page scrolling and hide bottom app navigation until closed.
+- Added an explanatory **Game sections** label before the five Overview, DLC, Playthroughs, Journal and Gallery tabs. Tabs remain horizontally scrollable on iPhone.
+- Existing game library, profile details and modal actions are preserved.
+
+### Interactive statistics
+- All four home summary cards (Games in library, Currently playing, Completed, Hours logged) now open Statistics with that category selected.
+- Category dashboards show real data and separate charts: game statuses, genres, platforms, currently playing hours, completed-game ratings, dated monthly finishes and top games by hours.
+- Game chart labels can open the corresponding saved game. Counts and graph empty states are explicit. Run-specific hours are not double-counted with total logged hours.
+
+### Default platform
+- PS5 is the editable default personal platform for new manually added games (already supported) and now for single and bulk catalogue imports too.
+- RAWG-supported platforms remain separate; existing saved games with different platforms are not overwritten.
+- Cloud and storage formats are unchanged. Refreshed the installed-app offline cache version.
+
 ## [1.8.0] — 2026-10-28
 **Game Profiles 2.0.**
 

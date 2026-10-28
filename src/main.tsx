@@ -4,6 +4,7 @@ import App from './App';
 import './styles.css';
 import './visualRefresh.css';
 import './profile18.css';
+import './mobileStatsPatch.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

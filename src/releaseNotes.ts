@@ -17,6 +17,22 @@ export interface Release {
  */
 export const RELEASE_NOTES: Release[] = [
   {
+    version: '1.8.1',
+    date: '2026-10-28',
+    title: 'Mobile profile fixes and interactive home stats.',
+    summary: 'Reachable back navigation, PS5 imports, game-profile tab guidance, and charts behind every home metric.',
+    changes: [
+      { type: 'Fixed', text: 'The Return to library control is now a larger touch target positioned below iPhone safe areas in game profiles.' },
+      { type: 'Fixed', text: 'Opening a modal freezes background scrolling and hides mobile bottom navigation, preventing it appearing through the profile when overscrolling.' },
+      { type: 'Improved', text: 'The five game-profile tabs are clearly introduced as Overview, DLC, Playthroughs, Journal, and Gallery with horizontal swipe guidance on mobile.' },
+      { type: 'Added', text: 'All four home summary cards are clickable shortcuts to focused Statistics screens for Library, Playing, Completed and Hours logged.' },
+      { type: 'Added', text: 'Focused charts: library statuses, genres, platforms, current playtime, completed ratings and dated finishes, top games by hours and playtime genres.' },
+      { type: 'Fixed', text: 'New RAWG and Wikipedia single and bulk game imports use PS5 as the editable default personal platform, separate from RAWG available-platform information.' },
+      { type: 'Improved', text: 'Empty-state hints for statistics use real saved data only; run-specific hours remain separate to prevent double counting.' },
+    ],
+  },
+
+  {
     version: '1.8.0',
     date: '2026-10-28',
     title: 'Game Profiles 2.0',

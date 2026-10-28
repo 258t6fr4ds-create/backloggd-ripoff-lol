@@ -17,6 +17,14 @@ Every release must have complete notes in **both** the app's **What's New** pane
 
 The app always displays the current version and a **What's New** history, with an unread marker per browser until the latest entry is viewed. The notes remain available after the user's ChatGPT subscription ends.
 
+## v1.8.1 — Mobile navigation, PS5 defaults and detailed home statistics
+
+- Game profiles use a safe-area-aware, reachable **Return to library** button, and scrolling a modal never reveals or activates the bottom navigation underneath.
+- The Game sections hint identifies the five profile tabs: Overview, DLC, Playthroughs, Journal and Gallery. On mobile, swipe sideways across tabs.
+- Home's **Games in library**, **Currently playing**, **Completed** and **Hours logged** cards all open their matching focused Statistics dashboard with live charts of your own saved records.
+- New catalogue imports default to PS5 as your own editable platform. RAWG-supported platforms remain distinct; existing platform entries are preserved.
+- No Worker, SQL or database migration required.
+
 ## v1.8.0 — Game Profiles 2.0
 
 - Open any game in your library to access **Overview**, **DLC**, **Playthroughs**, **Journal** and **Gallery** without one giant scroll.
