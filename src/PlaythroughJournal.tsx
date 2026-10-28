@@ -38,17 +38,19 @@ const fmtDate = (date:string) => {
 };
 
 export default function PlaythroughJournal({
-  game, onUpdate
+  game, onUpdate, initialSection = 'runs', embedded = false
 }:{
   game:Game;
   onUpdate:(patch:Partial<Game>)=>Promise<boolean>;
+  initialSection?: 'runs' | 'journal';
+  embedded?: boolean;
 }) {
   const runs=game.playthroughs??[];
   const entries=game.journal??[];
   // History is a compact disclosure until it contains actual user data.
   // This keeps empty playthrough placeholders away from DLC workflows.
-  const [expanded,setExpanded]=useState(() => runs.length>0 || entries.length>0);
-  const [section,setSection]=useState<'runs'|'journal'>('runs');
+  const [expanded,setExpanded]=useState(() => embedded || runs.length>0 || entries.length>0);
+  const [section,setSection]=useState<'runs'|'journal'>(initialSection);
   const [editRunId,setEditRunId]=useState<string|null>(null);
   const [showRunEditor,setShowRunEditor]=useState(false);
   const [runDraft,setRunDraft]=useState<RunForm>({...emptyRun});
@@ -168,8 +170,8 @@ export default function PlaythroughJournal({
     finally{setBusy(false);}
   }
 
-  return <section className="run-journal-panel" aria-label={'Playthroughs and journal for '+game.title}>
-    <div className="run-journal-heading">
+  return <section className={'run-journal-panel'+(embedded?' run-journal-embedded':'')} aria-label={'Playthroughs and journal for '+game.title}>
+    {!embedded&&<div className="run-journal-heading">
       <div><span className="eyebrow">YOUR PLAY HISTORY</span><h3>Playthroughs & journal</h3></div>
       <div className="run-journal-heading-actions">
         <div className="run-journal-summary"><span>{runs.length} runs</span><span>{entries.length} entries</span></div>
@@ -180,16 +182,16 @@ export default function PlaythroughJournal({
           <ChevronDown size={16} className={expanded?'run-journal-toggle-open':''}/>
         </button>
       </div>
-    </div>
-    {expanded&&<div id={'run-journal-content-'+game.id} className="run-journal-content">
-    <div className="run-journal-tabs" role="tablist" aria-label="Game history">
+    </div>}
+    {(embedded||expanded)&&<div id={'run-journal-content-'+game.id} className="run-journal-content">
+    {!embedded&&<div className="run-journal-tabs" role="tablist" aria-label="Game history">
       <button role="tab" aria-selected={section==='runs'} className={section==='runs'?'active':''} onClick={()=>{setSection('runs');setShowJournalEditor(false);}}>
         <Clock3 size={17}/> Playthroughs <span>{runs.length}</span>
       </button>
       <button role="tab" aria-selected={section==='journal'} className={section==='journal'?'active':''} onClick={()=>{setSection('journal');setShowRunEditor(false);}}>
         <BookOpen size={17}/> Journal <span>{entries.length}</span>
       </button>
-    </div>
+    </div>}
     {message && <p className="run-journal-message" role="status">{message}</p>}
     {section==='runs'&&<div role="tabpanel">
       <div className="run-journal-intro">
