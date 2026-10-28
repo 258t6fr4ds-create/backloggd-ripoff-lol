@@ -191,7 +191,7 @@ export default function GameProfile({
             </a>)}</div>
           </section>}
           {seriesError&&<p className="gv-profile-series-note">Series information couldn't be loaded: {seriesError}</p>}
-          {safeCover(game.catalogUrl)&&<div className="detail-catalog-source">
+          {safeCover(game.catalogUrl??'')&&<div className="detail-catalog-source">
             Game catalogue: <a href={game.catalogUrl} target="_blank" rel="noopener noreferrer">
               {game.catalogSource==='rawg'?'RAWG':'Wikipedia'} <ExternalLink size={13}/>
             </a>
