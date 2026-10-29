@@ -2,7 +2,7 @@ name: Deploy GameVault to GitHub Pages
 
 on:
   push:
-    branches: [main]
+    branches: [main, fix/v1-9-1-final-hardening]
   workflow_dispatch:
 
 permissions:
@@ -33,6 +33,7 @@ jobs:
         with:
           path: dist
   deploy:
+    if: github.ref == 'refs/heads/main'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
