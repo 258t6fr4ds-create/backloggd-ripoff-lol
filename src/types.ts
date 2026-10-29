@@ -34,6 +34,7 @@ export interface GameSession {
   date:string; // YYYY-MM-DD, user's local date
   minutes:number;
   note:string;
+  addedToHours?:boolean;
   createdAt:string;
 }
 export interface GameJournalEntry {
@@ -165,6 +166,7 @@ export function normalizeGame(raw: unknown): Game | null {
       if(duration===null)return [];
       return [{id:safeId(v.id),date:v.date,minutes:duration,
         note:typeof v.note==='string'?v.note.slice(0,500):'',
+        addedToHours:v.addedToHours===true,
         createdAt:safeIso(v.createdAt)} satisfies GameSession];
     }):[],
     coverUrl: text('coverUrl').slice(0, 2048),
