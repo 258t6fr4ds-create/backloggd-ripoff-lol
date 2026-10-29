@@ -28,6 +28,14 @@ export interface GamePlaythrough {
   createdAt: string;
   updatedAt: string;
 }
+/** Individually logged, dated activity. Game-level time is tracked separately. */
+export interface GameSession {
+  id:string;
+  date:string; // YYYY-MM-DD, user's local date
+  minutes:number;
+  note:string;
+  createdAt:string;
+}
 export interface GameJournalEntry {
   id: string;
   title: string;
@@ -44,6 +52,9 @@ export interface Game {
   platform: string; // user-owned/played platform, never inferred from RAWG
   availablePlatforms?: string; // supported platform names listed by RAWG
   shelves?: string[]; // user-defined synced library shelves
+  priority?: number; // 0 unranked, 1-5 personal backlog priority
+  progress?: number | null; // optional 0-100% personal progress
+  sessions?: GameSession[]; // recorded gaming sessions, separate from the running hours total
   genres: string;
   coverUrl: string;
   description?: string;
@@ -91,7 +102,8 @@ export const ownershipLabel: Record<Ownership, string> = {
 export const emptyGame: GameInput = {
   title: '', year: null, platform: 'PS5', genres: '', coverUrl: '',
   status: 'backlog', ownership: 'digital', rating: null, hours: 0, dlcs: [],
-  playthroughs: [], journal: [], shelves: [],
+  playthroughs: [], journal: [], shelves: [], sessions: [],
+  priority: 0, progress: null,
   notes: '', completedAt: '', priceTarget: null, favourite: false,
   released: '', developers: '', publishers: '',
 };
@@ -143,6 +155,18 @@ export function normalizeGame(raw: unknown): Game | null {
           .filter(s=>s.length>0))].slice(0,12)
       : [],
     genres: text('genres').slice(0, 240),
+    priority: typeof g.priority==='number' && Number.isInteger(g.priority) && g.priority>=1 && g.priority<=5 ? g.priority : 0,
+    progress: numberOrNull(g.progress,100),
+    sessions: Array.isArray(g.sessions)?g.sessions.slice(0,500).flatMap(item=>{
+      if(!item||typeof item!=='object')return [];
+      const v=item as Record<string,unknown>;
+      if(typeof v.date!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(v.date))return [];
+      const duration=typeof v.minutes==='number'&&Number.isInteger(v.minutes)&&v.minutes>=1&&v.minutes<=1440?v.minutes:null;
+      if(duration===null)return [];
+      return [{id:safeId(v.id),date:v.date,minutes:duration,
+        note:typeof v.note==='string'?v.note.slice(0,500):'',
+        createdAt:safeIso(v.createdAt)} satisfies GameSession];
+    }):[],
     coverUrl: text('coverUrl').slice(0, 2048),
     description: text('description').slice(0, 5000),
     released: /^\d{4}-\d{2}-\d{2}$/.test(text('released')) ? text('released').slice(0,10) : '',
