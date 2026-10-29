@@ -171,7 +171,10 @@ function GameForm({ initial, onClose, onSave }: {
             <label className="field">Completion progress
               <input type="number" min="0" max="100" step="1" placeholder="Not recorded"
                 value={draft.progress??''}
-                onChange={e=>set('progress',e.target.value===''?null:Math.max(0,Math.min(100,Math.round(Number(e.target.value)))))}/>
+                onChange={e=>{
+                  const parsed=Number(e.target.value);
+                  set('progress',e.target.value===''||!Number.isFinite(parsed)?null:Math.max(0,Math.min(100,Math.round(parsed))));
+                }}/>
               <span className="field-help">Optional percentage (0–100).</span>
             </label>
             <label className="field span-2">Genres <input maxLength={240} placeholder="RPG, Open World, Adventure" value={draft.genres} onChange={e => set('genres', e.target.value)}/><span className="field-help">Separate genres with commas.</span></label>

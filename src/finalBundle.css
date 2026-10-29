@@ -121,3 +121,13 @@
 @media(prefers-reduced-motion:reduce){
  .gv-backlog-queue-row{transition:none}
 }
+
+
+/* v1.9.1 QA: preserve update notices behind active modal sheets and keep
+   long mobile tab labels tappable without overlaying the top status bar. */
+html.gv-modal-active .gv-update-notice{display:none!important}
+@media(max-width:650px){
+  .gv-profile-v18 .gv-profile-tabs button{min-height:55px;min-width:0;touch-action:manipulation}
+  .gv-backlog-queue-row{min-height:48px}
+  .gv-session-row .icon-btn{touch-action:manipulation}
+}

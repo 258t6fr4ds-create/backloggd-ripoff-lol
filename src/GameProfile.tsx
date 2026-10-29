@@ -17,7 +17,7 @@ type ProfileTab='overview'|'dlc'|'runs'|'journal'|'gallery';
 const tabs: {id:ProfileTab;label:string;icon:typeof Info}[]=[
   {id:'overview',label:'Overview',icon:Info},
   {id:'dlc',label:'DLC',icon:Layers3},
-  {id:'runs',label:'Playthroughs',icon:Clock3},
+  {id:'runs',label:'Sessions & runs',icon:Clock3},
   {id:'journal',label:'Journal',icon:BookOpen},
   {id:'gallery',label:'Gallery',icon:Images},
 ];

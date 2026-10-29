@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { CalendarDays, Check, Clock3, Plus, Trash2 } from 'lucide-react';
 import type { Game, GameSession } from './types';
+import { validGameDate } from './types';
 
 const localDay=()=>{
   const now=new Date();return [now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('-');
@@ -26,18 +27,22 @@ export default function GameSessions({game,onUpdate}:{
     const duration=Number(minutes);
     if(busy)return;
     if(!Number.isInteger(duration)||duration<1||duration>1440){setMessage('Enter between 1 and 1,440 whole minutes.');return;}
-    if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!Number.isFinite(Date.parse(date+'T12:00:00'))||date>localDay()){setMessage('Choose a valid date, not in the future.');return;}
-    if(items.length>=500){setMessage('Session history is full (500 entries).');return;}
+    if(!validGameDate(date)||date>localDay()){setMessage('Choose a real calendar date, not in the future.');return;}
+    if(items.length>=250){setMessage('This game already has 250 session records. Export a JSON backup before adding more.');return;}
     const nextHours=Number((game.hours+duration/60).toFixed(2));
     if(addHours&&nextHours>1000000){setMessage('Game hours cannot exceed 1,000,000. Uncheck Add to game hours.');return;}
     const item:GameSession={id:crypto.randomUUID(),date,minutes:duration,note:note.trim().slice(0,500),addedToHours:addHours,createdAt:new Date().toISOString()};
     const patch:Partial<Game>={sessions:[...(game.sessions??[]),item]};
     if(addHours)patch.hours=nextHours;
+    if(new TextEncoder().encode(JSON.stringify({...game,...patch})).byteLength>180000){
+      setMessage('This record is near its cloud-sync size limit. Export a JSON backup before logging more sessions.');return;
+    }
     setBusy(true);setMessage('');
     try{
       if(await onUpdate(patch)){setEditing(false);setNote('');setMinutes('60');setMessage('Session logged.');}
       else setMessage('Could not save session. Try again.');
-    }finally{setBusy(false);}
+    }catch{setMessage('Could not save session. Your previous records are unchanged.');}
+    finally{setBusy(false);}
   }
   async function remove(id:string){
     if(busy)return;
@@ -47,7 +52,8 @@ export default function GameSessions({game,onUpdate}:{
       if(await onUpdate({sessions:(game.sessions??[]).filter(item=>item.id!==id)}))
         setMessage('Session removed. Existing game hours were not changed.');
       else setMessage('Could not remove session.');
-    }finally{setBusy(false);}
+    }catch{setMessage('Could not remove session. Please retry.');}
+    finally{setBusy(false);}
   }
   return <section className="gv-session-panel" aria-label={'Gaming sessions for '+game.title}>
     <div className="gv-session-head">

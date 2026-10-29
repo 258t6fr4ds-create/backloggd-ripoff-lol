@@ -84,6 +84,15 @@ export interface Game {
 
 export type GameInput = Omit<Game, 'id' | 'addedAt' | 'updatedAt'>;
 
+/** Strict calendar validation; Date.parse alone accepts rolled-over dates. */
+export function validGameDate(value:string):boolean {
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(value))return false;
+  const [year,month,day]=value.split('-').map(Number);
+  if(year<1900||year>2200||month<1||month>12||day<1||day>31)return false;
+  const date=new Date(Date.UTC(year,month-1,day));
+  return date.getUTCFullYear()===year && date.getUTCMonth()+1===month && date.getUTCDate()===day;
+}
+
 export const statusLabel: Record<GameStatus, string> = {
   playing: 'Playing',
   backlog: 'Backlog',
@@ -161,7 +170,7 @@ export function normalizeGame(raw: unknown): Game | null {
     sessions: Array.isArray(g.sessions)?g.sessions.slice(0,500).flatMap(item=>{
       if(!item||typeof item!=='object')return [];
       const v=item as Record<string,unknown>;
-      if(typeof v.date!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(v.date))return [];
+      if(typeof v.date!=='string'||!validGameDate(v.date))return [];
       const duration=typeof v.minutes==='number'&&Number.isInteger(v.minutes)&&v.minutes>=1&&v.minutes<=1440?v.minutes:null;
       if(duration===null)return [];
       return [{id:safeId(v.id),date:v.date,minutes:duration,
