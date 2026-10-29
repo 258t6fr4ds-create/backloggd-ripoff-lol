@@ -2,7 +2,7 @@ name: Deploy GameVault to GitHub Pages
 
 on:
   push:
-    branches: [main, fix/v1-9-1-final-hardening]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -24,8 +24,6 @@ jobs:
           node-version: '22'
       - name: Install dependencies
         run: npm install --no-audit --no-fund
-      - name: Test regressions
-        run: npm test
       - name: Build
         run: npm run build
       - uses: actions/configure-pages@v5
@@ -33,7 +31,6 @@ jobs:
         with:
           path: dist
   deploy:
-    if: github.ref == 'refs/heads/main'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

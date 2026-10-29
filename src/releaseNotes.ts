@@ -26,6 +26,7 @@ export const RELEASE_NOTES: Release[] = [
       {type:'Fixed',text:'Session logging checks game-record size before saving to avoid exceeding the practical per-record cloud sync limit.'},
       {type:'Fixed',text:'Protected session saves and deletes from unexpected write failures, keeping controls responsive after an error.'},
       {type:'Fixed',text:'Completion progress entry no longer produces NaN for an incomplete numeric input.'},
+      {type:'Fixed',text:'Wishlist journal notes are no longer counted in the main played-library journal statistics, matching how run totals are calculated.'},
       {type:'Improved',text:'Clarified Sessions & runs tab wording and adjusted mobile touch targets for saved sessions and backlog queues.'},
       {type:'Fixed',text:'Update notices are hidden while an editing or game modal is active, avoiding accidental overlays.'},
       {type:'Added',text:'Regression tests for legacy save compatibility, session validation, ratings and analytics; required by GitHub Actions before deployment.'},
