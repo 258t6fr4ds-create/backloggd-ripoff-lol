@@ -2,6 +2,18 @@
 
 All meaningful app updates receive dated, versioned patch notes. These match the in-app **What's New** panel. Entries list changes actually shipped, never planned features.
 
+## [1.9.1] — 2026-10-30
+**Final stability and mobile polish.**
+
+- Added strict session calendar validation so invalid leap days and month rollover dates cannot be recorded or silently restored as valid sessions.
+- Added a 180 KB game-record size guard for new session logs to reduce cloud-sync failures. New logs stop at 250 per game; previously saved records are retained, and full JSON backups remain available.
+- Session save/remove controls now handle failed or thrown persistence safely; no permanently stuck busy state.
+- Hardened completion-progress numeric entry against incomplete/invalid values.
+- Clarified **Sessions & runs** in the five-tab game profile; maintained generous mobile buttons and profile safe-area layout.
+- Suppressed update prompts behind active modals so game edits aren't obscured.
+- Added Node regression tests for legacy saves, DLC/journal/playthrough compatibility, valid session dates and flags, safe artwork URLs, and basic analytics. CI now runs these checks before building/deploying.
+- No changes to installed Worker, Supabase schema, ownership data or backup format.
+
 ## [1.9.0] — 2026-10-30
 **The final feature bundle before moving focus to Gaia Atlas.**
 

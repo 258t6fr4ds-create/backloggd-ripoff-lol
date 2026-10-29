@@ -17,6 +17,14 @@ Every release must have complete notes in **both** the app's **What's New** pane
 
 The app always displays the current version and a **What's New** history, with an unread marker per browser until the latest entry is viewed. The notes remain available after the user's ChatGPT subscription ends.
 
+## v1.9.1 — Final hardening and regression tests
+
+- Session logging rejects impossible dates, guards unusually large records before cloud sync, and handles save/delete errors safely.
+- Progress input and mobile profile controls have additional validation and layout polish.
+- The update banner is hidden while game forms and modals are active.
+- A Node regression suite covers legacy save compatibility, sessions, dates, artwork URLs and analytics. GitHub Actions runs **npm test** before the production build.
+- This is a code-quality pass, not a claim that every possible iPhone/browser bug has been reproduced or eliminated. Please report any issue that still occurs on your device.
+
 ## v1.9.0 — Final feature bundle
 
 - **Log sessions:** open any saved game → Playthroughs → Log session. Enter a date and minutes; optional notes and game-hour addition. Session logs sync and export inside the game record.

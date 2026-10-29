@@ -17,6 +17,23 @@ export interface Release {
  */
 export const RELEASE_NOTES: Release[] = [
   {
+    version:'1.9.1',
+    date:'2026-10-30',
+    title:'Final stability and mobile polish.',
+    summary:'Validated session inputs and cloud limits, improved touch and update overlays, and added a repeatable regression test suite.',
+    changes:[
+      {type:'Fixed',text:'Session dates now reject impossible calendar dates, including incorrect leap days and invalid month lengths.'},
+      {type:'Fixed',text:'Session logging checks game-record size before saving to avoid exceeding the practical per-record cloud sync limit.'},
+      {type:'Fixed',text:'Protected session saves and deletes from unexpected write failures, keeping controls responsive after an error.'},
+      {type:'Fixed',text:'Completion progress entry no longer produces NaN for an incomplete numeric input.'},
+      {type:'Improved',text:'Clarified Sessions & runs tab wording and adjusted mobile touch targets for saved sessions and backlog queues.'},
+      {type:'Fixed',text:'Update notices are hidden while an editing or game modal is active, avoiding accidental overlays.'},
+      {type:'Added',text:'Regression tests for legacy save compatibility, session validation, ratings and analytics; required by GitHub Actions before deployment.'},
+      {type:'Improved',text:'No game data reset, database migration, API endpoint change or app reinstall required.'},
+    ],
+  },
+
+  {
     version:'1.9.0',
     date:'2026-10-30',
     title:'The final feature bundle.',
