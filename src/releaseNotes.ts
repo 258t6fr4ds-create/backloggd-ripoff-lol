@@ -17,6 +17,22 @@ export interface Release {
  */
 export const RELEASE_NOTES: Release[] = [
   {
+    version:'1.9.0',
+    date:'2026-10-30',
+    title:'The final feature bundle.',
+    summary:'Gaming session diary, backlog command centre, per-game progress and priorities, richer activity charts, and CSV exports.',
+    changes:[
+      {type:'Added',text:'Log dated gaming sessions with duration and notes from a game\'s Playthroughs tab. Optionally add each session to its game-level hours.'},
+      {type:'Added',text:'Personal completion percentages and backlog priority rankings (0–5) per game. They are optional and stored with your games.'},
+      {type:'Added',text:'Discover now includes a backlog command centre with ranked queues, priority filtering, weighted surprise picks and one-click Start playing.'},
+      {type:'Added',text:'Statistics includes monthly session activity charts, top session games, progress tracking and logging streaks from recorded dates only.'},
+      {type:'Added',text:'Sort the Library by backlog priority or completion progress, with progress and priority chips on saved cards.'},
+      {type:'Added',text:'Export a spreadsheet-friendly CSV inventory, with formula-safe fields. JSON remains the complete restorable backup.'},
+      {type:'Improved',text:'Session logs, priorities and progress stay within each game for existing JSON backups and Supabase sync. No extra API or database migration.'},
+    ]
+  },
+
+  {
     version: '1.8.4',
     date: '2026-10-28',
     title: 'A proper phone navigation.',

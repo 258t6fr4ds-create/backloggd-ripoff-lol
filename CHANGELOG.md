@@ -2,6 +2,29 @@
 
 All meaningful app updates receive dated, versioned patch notes. These match the in-app **What's New** panel. Entries list changes actually shipped, never planned features.
 
+## [1.9.0] — 2026-10-30
+**The final feature bundle before moving focus to Gaia Atlas.**
+
+### Play history and progress
+- Log dated gaming sessions inside each game's Playthroughs section, with an optional short note and a toggle to add session time to the game-level hours total.
+- Session records live inside the original game object, included automatically in local saves, JSON exports and cloud sync.
+- Optional game completion percentage (0–100) and backlog priority (0–5) are editable per game.
+- Game cards and profile overview can show priority and progress.
+
+### Discovery and statistics
+- Backlog command centre in Discover: priority-weighted suggestions, surprise pick, queued-game rankings, filters and Start playing.
+- Activity insights in Statistics: monthly logged-session hours, current logging streak, most frequently logged games and highest completion progress.
+- Session hours are reported separately from game totals, so previous manually logged playtime is not silently counted twice.
+
+### Library and export
+- New Library sorting by completion progress or backlog priority.
+- Export library inventory as UTF-8 CSV via Settings & backups or the More tab. Escapes leading spreadsheet formulas. Includes status, platform, rating, hours, progress, priority, genre, shelves, dates, and more.
+- CSV is a readable report, **not** a lossless backup. Continue exporting JSON for full restoration of nested DLC, journals, playthroughs and sessions.
+
+### Compatibility
+- Optional additive metadata only; old game records remain valid. No Worker redeployment, new SQL schema, account, paid service, or new secrets.
+- Versioned offline cache and release notes updated.
+
 ## [1.8.4] — 2026-10-28
 **Proper phone navigation.**
 

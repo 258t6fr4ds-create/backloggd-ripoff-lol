@@ -17,6 +17,15 @@ Every release must have complete notes in **both** the app's **What's New** pane
 
 The app always displays the current version and a **What's New** history, with an unread marker per browser until the latest entry is viewed. The notes remain available after the user's ChatGPT subscription ends.
 
+## v1.9.0 — Final feature bundle
+
+- **Log sessions:** open any saved game → Playthroughs → Log session. Enter a date and minutes; optional notes and game-hour addition. Session logs sync and export inside the game record.
+- **Progress and priority:** Edit game → set completion progress (0–100%) and personal backlog priority (0–5). Sort the Library by either, or use the priority values to rank Discover.
+- **Backlog command centre:** Find priority-ranked games, filter the queue and select Surprise me for a weighted random pick that can be started immediately.
+- **Activity analytics:** Statistics now includes monthly session tracking, time by game, recorded-day streaks and completion progress. Session totals are not added to game totals when calculating analytics.
+- **CSV export:** More or Settings & backups → Export CSV report. The inventory can be opened in a spreadsheet. Always retain a JSON backup for full restoration.
+- Additive optional fields only; no schema migrations, Worker redeploy, account, or paid dependencies. Old game data is compatible.
+
 ## v1.8.4 — Mobile bottom navigation with More
 
 - On phone-sized screens, GameVault **hides the old top bar entirely**. The iPhone status area no longer covers tiny toolbar icons.

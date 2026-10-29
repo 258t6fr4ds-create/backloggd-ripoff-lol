@@ -7,6 +7,7 @@ import './profile18.css';
 import './mobileStatsPatch.css';
 import './updateNotice.css';
 import './mobileMoreNavigation.css';
+import './finalBundle.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

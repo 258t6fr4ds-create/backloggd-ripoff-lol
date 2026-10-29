@@ -1,4 +1,4 @@
-const CACHE = 'gamevault-app-v1.8.4';
+const CACHE = 'gamevault-app-v1.9.0';
 const SCOPE = self.registration.scope;
 
 self.addEventListener('install', event => {
