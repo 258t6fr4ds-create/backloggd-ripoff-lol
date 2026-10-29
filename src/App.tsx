@@ -27,9 +27,11 @@ import StatDetailPanel from './StatDetailPanel';
 import type { StatFocus } from './StatDetailPanel';
 import InsightsPanel from './InsightsPanel';
 import DiscoveryRecommendations from './DiscoveryRecommendations';
+import BacklogCommand from './BacklogCommand';
+import ActivityInsights from './ActivityInsights';
 
 type Page = 'home' | 'library' | 'discover' | 'wishlist' | 'stats' | 'more';
-type Sort = 'recent' | 'title' | 'rating' | 'hours' | 'year';
+type Sort = 'recent' | 'title' | 'rating' | 'hours' | 'year' | 'priority' | 'progress';
 const NAV = [
   { id: 'home', label: 'Home', icon: Home },
   { id: 'library', label: 'Library', icon: Library },
@@ -98,7 +100,9 @@ function GameCard({ game, onClick, selecting = false, checked = false }: { game:
         {game.rating!==null&&<span className="gv-poster-rating"><Star size={12} fill="currentColor"/> {game.rating.toFixed(1)}</span>}
       </div>
       <div className="card-meta"><h3 title={game.title}>{game.title}</h3><p>{game.year || 'Year unknown'} <span>·</span> {platformSummary(game)}</p></div>
-      <div className="card-bottom"><Pill tone={'status-' + game.status}>{statusLabel[game.status]}</Pill>{(game.dlcs?.length ?? 0) > 0 && <span className="rating-small">{game.dlcs!.length} DLC</span>}{(game.playthroughs?.length ?? 0) > 0 && <span className="rating-small">{game.playthroughs!.length} runs</span>}{(game.shelves?.length??0)>0&&<span className="rating-small gv-card-shelf">{game.shelves![0]}</span>}</div>
+      <div className="card-bottom"><Pill tone={'status-' + game.status}>{statusLabel[game.status]}</Pill>{(game.dlcs?.length ?? 0) > 0 && <span className="rating-small">{game.dlcs!.length} DLC</span>}{(game.playthroughs?.length ?? 0) > 0 && <span className="rating-small">{game.playthroughs!.length} runs</span>}{(game.shelves?.length??0)>0&&<span className="rating-small gv-card-shelf">{game.shelves![0]}</span>}
+          {(game.priority??0)>0&&<span className="rating-small gv-priority-chip">P{game.priority}</span>}
+          {game.progress!==null&&game.progress!==undefined&&<span className="rating-small gv-progress-chip">{game.progress}%</span>}</div>
     </button>
   );
 }
@@ -118,6 +122,8 @@ function GameForm({ initial, onClose, onSave }: {
     title: initial.title, year: initial.year, platform: initial.platform,
     availablePlatforms: initial.availablePlatforms ?? '', genres: initial.genres,
     shelves: initial.shelves ?? [],
+    priority: initial.priority ?? 0, progress: initial.progress ?? null,
+    sessions: initial.sessions ?? [],
     coverUrl: initial.coverUrl, description: initial.description,
     released: initial.released ?? '', developers: initial.developers ?? '', publishers: initial.publishers ?? '',
     catalogId: initial.catalogId, catalogUrl: initial.catalogUrl,
@@ -153,6 +159,21 @@ function GameForm({ initial, onClose, onSave }: {
             <label className="field">How you access it <select value={draft.ownership} onChange={e => set('ownership', e.target.value as Ownership)}>{OWNERSHIPS.map(s => <option value={s} key={s}>{ownershipLabel[s]}</option>)}</select></label>
             <label className="field">Your rating (0–10) <input type="number" min="0" max="10" step="0.5" placeholder="Unrated" value={draft.rating ?? ''} onChange={e => set('rating', e.target.value === '' ? null : Number(e.target.value))}/></label>
             <label className="field">Hours played <input type="number" min="0" max="1000000" step="0.1" value={draft.hours} onChange={e => set('hours', e.target.value === '' ? 0 : Number(e.target.value))}/></label>
+            <label className="field">Backlog priority
+              <select value={draft.priority??0} onChange={e=>set('priority',Number(e.target.value))}>
+                <option value={0}>Unranked</option>
+                <option value={1}>1 · Someday</option><option value={2}>2 · Low</option>
+                <option value={3}>3 · Medium</option><option value={4}>4 · High</option>
+                <option value={5}>5 · Play next</option>
+              </select>
+              <span className="field-help">Used for the backlog command centre, not your personal game rating.</span>
+            </label>
+            <label className="field">Completion progress
+              <input type="number" min="0" max="100" step="1" placeholder="Not recorded"
+                value={draft.progress??''}
+                onChange={e=>set('progress',e.target.value===''?null:Math.max(0,Math.min(100,Math.round(Number(e.target.value)))))}/>
+              <span className="field-help">Optional percentage (0–100).</span>
+            </label>
             <label className="field span-2">Genres <input maxLength={240} placeholder="RPG, Open World, Adventure" value={draft.genres} onChange={e => set('genres', e.target.value)}/><span className="field-help">Separate genres with commas.</span></label>
             <label className="field span-2">Custom shelves <input maxLength={500} placeholder="Physical collection, Favourites, Co-op…" value={shelfText} onChange={e=>setShelfText(e.target.value)}/><span className="field-help">Optional. Separate shelf names with commas; up to 12 per game. Your shelves travel with your cloud backup.</span></label>
             <label className="field span-2">Cover image URL <input type="url" maxLength={2048} placeholder="https://... (real artwork only)" value={draft.coverUrl} onChange={e => set('coverUrl', e.target.value)}/><span className="field-help">Optional. Paste a direct image link; no AI-generated artwork.</span></label>
@@ -300,6 +321,8 @@ export default function App() {
       return matchesText && matchesStatus && matchesShelf && matchesPlatform && (!favouritesOnly || g.favourite);
     });
     return [...filtered].sort((a,b) => {
+      if (sort === 'priority') return (b.priority??0)-(a.priority??0)||a.title.localeCompare(b.title);
+      if (sort === 'progress') return (b.progress??-1)-(a.progress??-1)||a.title.localeCompare(b.title);
       if (sort === 'title') return a.title.localeCompare(b.title);
       if (sort === 'rating') return (b.rating ?? -1) - (a.rating ?? -1) || a.title.localeCompare(b.title);
       if (sort === 'hours') return b.hours - a.hours || a.title.localeCompare(b.title);
@@ -542,6 +565,23 @@ export default function App() {
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
     setNotice('Backup downloaded. Keep it somewhere safe.');
   }
+  function exportCsv() {
+    // CSV is a shareable report. JSON remains the full-fidelity restorable backup.
+    const safe=(value:unknown)=>{
+      const content=String(value??'');
+      const escaped=/^[\s]*[=+@\-\t\r]/.test(content)?"'"+content:content;
+      return '"'+escaped.replace(/"/g,'""')+'"';
+    };
+    const headers=['Title','Year','Platform','Status','Ownership','Rating','Hours','Progress %','Priority','Genres','Shelves','Favourite','Completed','DLC count','Session count','Notes'];
+    const rows=games.map(g=>[g.title,g.year??'',g.platform,statusLabel[g.status],ownershipLabel[g.ownership],g.rating??'',g.hours,g.progress??'',g.priority??0,g.genres,(g.shelves??[]).join('; '),g.favourite?'Yes':'No',g.completedAt,g.dlcs?.length??0,g.sessions?.length??0,g.notes]);
+    const csv='\uFEFF'+[headers,...rows].map(row=>row.map(safe).join(',')).join('\r\n');
+    const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+    const anchor=document.createElement('a');
+    anchor.href=url;anchor.download='gamevault-library-'+new Date().toISOString().slice(0,10)+'.csv';
+    document.body.appendChild(anchor);anchor.click();anchor.remove();
+    window.setTimeout(()=>URL.revokeObjectURL(url),5000);
+    setNotice('CSV export created. Keep JSON backups for full restoration of DLC, playthroughs and sessions.');
+  }
   async function importBackup(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     event.target.value = '';
@@ -646,7 +686,7 @@ export default function App() {
                   <div className="search-field"><Search size={18}/><input aria-label="Search games" placeholder="Search titles, genres, notes…" value={query} onChange={e => setQuery(e.target.value)}/>{query && <button aria-label="Clear search" onClick={() => setQuery('')}><X size={16}/></button>}</div>
                   <label className="select-wrap"><Filter size={16}/><select aria-label="Filter by status" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}><option value="all">All statuses</option>{STATUSES.map(s => <option key={s} value={s}>{statusLabel[s]}</option>)}</select><ChevronDown size={15}/></label>
                   <label className="select-wrap"><Gamepad2 size={15}/><select aria-label="Filter by owned platform" value={platformFilter} onChange={e=>setPlatformFilter(e.target.value)}><option value="all">All platforms</option>{ownedPlatforms.map(p=><option key={p} value={p}>{p}</option>)}</select><ChevronDown size={15}/></label>
-                  <label className="select-wrap"><SlidersHorizontal size={16}/><select aria-label="Sort games" value={sort} onChange={e => setSort(e.target.value as Sort)}><option value="recent">Recently updated</option><option value="title">Title A–Z</option><option value="rating">Top rated</option><option value="hours">Most played</option><option value="year">Newest release</option></select><ChevronDown size={15}/></label>
+                  <label className="select-wrap"><SlidersHorizontal size={16}/><select aria-label="Sort games" value={sort} onChange={e => setSort(e.target.value as Sort)}><option value="recent">Recently updated</option><option value="title">Title A–Z</option><option value="rating">Top rated</option><option value="hours">Most played</option><option value="year">Newest release</option><option value="priority">Backlog priority</option><option value="progress">Completion progress</option></select><ChevronDown size={15}/></label>
                 </div>
                 <div className="gv-library-toolbar">
                   <button className={'gv-favourites-filter'+(favouritesOnly?' active':'')} aria-pressed={favouritesOnly} onClick={()=>setFavouritesOnly(v=>!v)}><Heart size={16} fill={favouritesOnly?'currentColor':'none'}/> Favourites</button>
@@ -698,6 +738,7 @@ export default function App() {
               </>}
               {page === 'discover' && <>
                 <div className="page-heading"><div><span className="eyebrow">YOUR NEXT ADVENTURE</span><h1>Discover</h1><p>Find your next game from your own backlog, with recommendations that explain why.</p></div></div>
+                <BacklogCommand games={games} onOpen={setSelectedId} onStart={game=>patchGame(game,{status:'playing'})}/>
                 <DiscoveryRecommendations
                   games={games}
                   onOpen={setSelectedId}
@@ -730,6 +771,7 @@ export default function App() {
                     {!collection.length && <p className="empty-inline">Your platform breakdown appears when you add games.</p>}
                   </section>
                 </div>
+                <ActivityInsights games={games} onOpen={setSelectedId}/>
                 <InsightsPanel games={games}/>
               </>}
               {page === 'more' && <>
@@ -747,6 +789,10 @@ export default function App() {
                     <span className="gv-more-copy"><strong>Add manually</strong><small>Create your own game record with PS5 as the default platform</small></span><ArrowRight size={20}/>
                   </button>
                   <div className="gv-more-section-label">YOUR ACCOUNT & SETTINGS</div>
+                  <button type="button" className="gv-more-action" onClick={exportCsv}>
+                    <span className="gv-more-icon"><Download size={22}/></span>
+                    <span className="gv-more-copy"><strong>Export library as CSV</strong><small>Share a spreadsheet-friendly snapshot of games, progress and priority</small></span><ArrowRight size={20}/>
+                  </button>
                   <button type="button" className="gv-more-action" onClick={() => setShowCloud(true)}>
                     <span className="gv-more-icon"><Cloud size={22}/></span>
                     <span className="gv-more-copy"><strong>Cloud sync</strong><small>Sync your saved games across devices</small></span><ArrowRight size={20}/>
@@ -807,6 +853,7 @@ export default function App() {
             </div>
             <button className="setting-action" onClick={() => {setShowSettings(false);setShowCloud(true);}}><span className="setting-icon"><Cloud size={20}/></span><span><strong>Cloud sync</strong><small>Sync your game library with another device using Supabase</small></span><ArrowRight size={18}/></button>
             <button className="setting-action" onClick={openPatchNotes}><span className="setting-icon"><BookOpen size={20}/></span><span><strong>What's new in GameVault</strong><small>Patch notes, improvements and fixes · v{APP_VERSION}</small></span><ArrowRight size={18}/></button>
+            <button className="setting-action" onClick={exportCsv}><span className="setting-icon"><Download size={20}/></span><span><strong>Export CSV report</strong><small>Spreadsheet-friendly game inventory; use JSON for full backups</small></span><ArrowRight size={18}/></button>
             <button className="setting-action" onClick={exportBackup}><span className="setting-icon"><Download size={20}/></span><span><strong>Export your library</strong><small>Download all game records as a JSON backup</small></span><ArrowRight size={18}/></button>
             <button className="setting-action" onClick={() => importRef.current?.click()}><span className="setting-icon"><Upload size={20}/></span><span><strong>Import a backup</strong><small>Merge game records from another device or browser</small></span><ArrowRight size={18}/></button>
             <input ref={importRef} type="file" accept=".json,application/json" hidden onChange={importBackup}/>

@@ -11,6 +11,7 @@ import {
 } from './catalog';
 import DlcPanel from './DlcPanel';
 import PlaythroughJournal from './PlaythroughJournal';
+import GameSessions from './GameSessions';
 
 type ProfileTab='overview'|'dlc'|'runs'|'journal'|'gallery';
 const tabs: {id:ProfileTab;label:string;icon:typeof Info}[]=[
@@ -58,7 +59,7 @@ export default function GameProfile({
   const tabCount:Record<ProfileTab,string>={
     overview:'',
     dlc:String(game.dlcs?.length??0),
-    runs:String(game.playthroughs?.length??0),
+    runs:String((game.playthroughs?.length??0)+(game.sessions?.length??0)),
     journal:String(game.journal?.length??0),
     gallery:String(screenshotUrls.length)
   };
@@ -154,6 +155,10 @@ export default function GameProfile({
       </nav>
       <div role="tabpanel" id={'gv-panel-'+tab} aria-labelledby={'gv-tab-'+tab} className="gv-profile-tab-content">
         {tab==='overview'&&<>
+          {(game.progress!==null&&game.progress!==undefined||(game.priority??0)>0)&&<div className="gv-progress-overview">
+            {game.progress!==null&&game.progress!==undefined&&<div className="gv-progress-overview-row"><strong>Completion progress</strong><span>{game.progress}%</span><div className="gv-progress-track"><div style={{width:game.progress+'%'}}/></div></div>}
+            {(game.priority??0)>0&&<div className="gv-progress-priority"><strong>Backlog priority</strong><span>{game.priority}/5</span></div>}
+          </div>}
           <div className="detail-stats">
             <div><strong>{game.rating!==null?game.rating+'/10':'—'}</strong><span>Your rating</span></div>
             <div><strong>{fmtHours(game.hours)}h</strong><span>Time logged</span></div>
@@ -200,8 +205,11 @@ export default function GameProfile({
         </>}
         {tab==='dlc'&&<DlcPanel key={game.id} game={game} proxy={proxy}
           onFindManually={onDlcSearch} onAttach={onDlcAttach} onModify={onDlcModify}/>}
-        {tab==='runs'&&<PlaythroughJournal key={game.id+':runs'} game={game}
-          onUpdate={onUpdate} initialSection="runs" embedded/>}
+        {tab==='runs'&&<>
+          <GameSessions game={game} onUpdate={onUpdate}/>
+          <PlaythroughJournal key={game.id+':runs'} game={game}
+            onUpdate={onUpdate} initialSection="runs" embedded/>
+        </>}
         {tab==='journal'&&<PlaythroughJournal key={game.id+':journal'} game={game}
           onUpdate={onUpdate} initialSection="journal" embedded/>}
         {tab==='gallery'&&<section className="gv-profile-gallery">
