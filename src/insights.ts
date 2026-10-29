@@ -102,7 +102,7 @@ export function buildLibraryInsights(games: Game[], today = new Date()): Library
     loggedHours:library.reduce((sum,g)=>sum+Math.max(0,validNumber(g.hours)),0),
     runHours:runRows.reduce((sum,r)=>sum+Math.max(0,validNumber(r.hours)),0),
     runs:runRows.length,finishedRuns:runRows.filter(r=>r.status==='completed').length,
-    journalEntries:games.reduce((sum,g)=>sum+(g.journal?.length??0),0),
+    journalEntries:library.reduce((sum,g)=>sum+(g.journal?.length??0),0),
     genreRows,ratingBands,completionMonths:timeline,datedCompletions,
     statusRows:statuses.map(status=>({status,count:library.filter(g=>g.status===status).length})),
     ratedFavourites:library.filter(g=>g.favourite&&g.rating!==null).length
